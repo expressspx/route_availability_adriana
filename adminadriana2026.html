@@ -464,6 +464,70 @@ input:focus,select:focus{
     min-width:100%;
   }
 }
+
+.shift-options{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
+  gap:10px;
+  margin:12px 0;
+}
+
+.shift-switch{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:13px;
+  border:1px solid #334155;
+  border-radius:16px;
+  background:#020617;
+  font-weight:900;
+}
+
+.shift-switch input{
+  width:44px;
+  height:24px;
+  margin:0;
+  appearance:none;
+  border-radius:999px;
+  background:#334155;
+  position:relative;
+  cursor:pointer;
+  transition:.18s;
+}
+
+.shift-switch input:before{
+  content:"";
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:white;
+  position:absolute;
+  top:2px;
+  left:3px;
+  transition:.18s;
+}
+
+.shift-switch input:checked{
+  background:linear-gradient(90deg,#ee4d2d,#ff7a45);
+}
+
+.shift-switch input:checked:before{
+  transform:translateX(19px);
+}
+
+.shift-tag{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(56,189,248,.08);
+  border:1px solid rgba(56,189,248,.75);
+  color:#7dd3fc;
+  font-weight:900;
+  font-size:12px;
+  margin:4px 5px 4px 0;
+}
+
 </style>
 </head>
 
@@ -548,7 +612,14 @@ input:focus,select:focus{
       <label class="vehicle-check"><input type="checkbox" class="rotaVeiculo" value="MOTO"> MOTO</label>
       <label class="vehicle-check"><input type="checkbox" class="rotaVeiculo" value="VAN"> VAN</label>
     </div>
-    <div class="notice">Status inicial: DISPONÍVEL<br>Somente motoristas com veículo selecionado poderão pegar esta rota.</div>
+    <label>Turnos liberados para pegar esta rota</label>
+    <div class="shift-options">
+      <label class="shift-switch">AM <input type="checkbox" class="rotaTurno" value="AM" checked></label>
+      <label class="shift-switch">SD <input type="checkbox" class="rotaTurno" value="SD" checked></label>
+      <label class="shift-switch">PM2 <input type="checkbox" class="rotaTurno" value="PM2" checked></label>
+    </div>
+
+    <div class="notice">Status inicial: DISPONÍVEL<br>Somente motoristas com veículo e turno liberados poderão pegar esta rota.</div>
     <button onclick="criarRota()">Divulgar rota</button>
   </div>
 </div>
@@ -558,11 +629,16 @@ input:focus,select:focus{
   <div class="box large">
     <button class="close" onclick="fechar('modalRotasMassa')">×</button>
     <h2>Divulgação em massa</h2>
-    <p class="muted">Envie CSV/XLSX com colunas: <strong>route_name, region, allowed_vehicles</strong></p>
+    <p class="muted">Envie CSV/XLSX com colunas: <strong>route_name, region, allowed_vehicles, allowed_shifts</strong></p>
     <div class="notice">Exemplo de veículos:
 FIORINO,MOTO
 PASSEIO
-FIORINO,PASSEIO,VAN</div>
+FIORINO,PASSEIO,VAN
+
+Exemplo de turnos:
+AM
+AM,SD
+AM,SD,PM2</div>
     <button class="btn-info" onclick="baixarModeloRotas()">Baixar modelo Excel</button>
     <input type="file" id="arquivoRotas" accept=".csv,.xlsx,.xls">
     <div class="actions">
@@ -586,10 +662,17 @@ FIORINO,PASSEIO,VAN</div>
       <option>MOTO</option>
       <option>VAN</option>
     </select>
+
+    <label>Turno do motorista</label>
+    <select id="driverShift">
+      <option>AM</option>
+      <option>SD</option>
+      <option>PM2</option>
+    </select>
     <button onclick="criarMotorista()">Cadastrar motorista</button>
     <hr style="border-color:#263044;margin:20px 0">
     <div class="notice">Importação em massa: envie CSV/XLSX com colunas:
-driver_id, driver_name, vehicle_type, telephone</div>
+driver_id, driver_name, vehicle_type, shift, telephone</div>
     <button class="btn-info" onclick="baixarModeloMotoristas()">Baixar modelo Excel</button>
     <input type="file" id="arquivoMotoristas" accept=".csv,.xlsx,.xls">
     <button onclick="importarMotoristasArquivo()">Importar motoristas</button>
@@ -610,6 +693,9 @@ driver_id, driver_name, vehicle_type, telephone</div>
       <input id="editTelephone" placeholder="Telefone">
       <label>Tipo de veículo</label>
       <select id="editVehicleType"><option>FIORINO</option><option>PASSEIO</option><option>MOTO</option><option>VAN</option></select>
+
+      <label>Turno</label>
+      <select id="editShift"><option>AM</option><option>SD</option><option>PM2</option></select>
       <div class="actions">
         <button class="btn-info" onclick="salvarMotorista()">Salvar alterações</button>
         <button class="btn-dark" onclick="toggleMotorista()">Ativar/Desativar</button>
@@ -691,13 +777,14 @@ function fmtData(v){return v?new Date(v).toLocaleString("pt-BR"):"-"}
 function renderRotas(){
   const termo=(busca.value||"").toLowerCase();
   const lista=rotas.filter(r=>[
-    r.route_name,r.region,r.claimed_by_driver_name,r.claimed_by_driver_id,r.status,r.claimed_vehicle_type,r.claimed_telephone
+    r.route_name,r.region,r.claimed_by_driver_name,r.claimed_by_driver_id,r.status,r.claimed_vehicle_type,r.claimed_telephone,fmtTurnos(r.allowed_shifts)
   ].join(" ").toLowerCase().includes(termo));
 
   listaRotas.innerHTML=lista.length?lista.map(r=>{
     const disponivel = r.status === "disponivel";
     const statusTexto = disponivel ? "Disponível" : "Rota repassada";
     const veiculos = Array.isArray(r.allowed_vehicles) ? r.allowed_vehicles : [];
+    const turnos = Array.isArray(r.allowed_shifts) ? r.allowed_shifts : [];
 
     return `
       <div class="item">
@@ -710,6 +797,9 @@ function renderRotas(){
           <div class="vehicle-tags">
             ${veiculos.length ? veiculos.map(v=>`<span class="vehicle-tag">${v}</span>`).join("") : `<span class="vehicle-tag">Sem veículo</span>`}
           </div>
+          <div style="margin-top:8px">
+            ${turnos.length ? turnos.map(t=>`<span class="shift-tag">${t}</span>`).join("") : `<span class="shift-tag">Sem turno</span>`}
+          </div>
         </div>
 
         <div class="status-center">
@@ -720,6 +810,7 @@ function renderRotas(){
           <p><strong>Motorista:</strong> ${r.claimed_by_driver_name || "-"}</p>
           <p><strong>ID:</strong> ${r.claimed_by_driver_id || "-"}</p>
           <p><strong>Veículo:</strong> ${r.claimed_vehicle_type || "-"}</p>
+          <p><strong>Turno:</strong> ${r.claimed_shift || "-"}</p>
           <p><strong>Telefone:</strong> ${r.claimed_telephone || "-"}</p>
           <p><strong>Horário:</strong> ${fmtData(r.claimed_at)}</p>
         </div>
@@ -734,10 +825,26 @@ function renderRotas(){
 }
 
 function veiculosSelecionadosRota(){return Array.from(document.querySelectorAll(".rotaVeiculo:checked")).map(i=>i.value)}
+function turnosSelecionadosRota(){return Array.from(document.querySelectorAll(".rotaTurno:checked")).map(i=>i.value)}
+function fmtTurnos(v){return Array.isArray(v)?v.join(", "):"-"}
 async function criarRota(){
   const selected=veiculosSelecionadosRota();
-  if(!routeName.value.trim()||!region.value.trim()||!selected.length){toast("Preencha todos os campos.");return}
-  try{await rpc("admin_create_route",{p_password:adminPass,p_route_name:routeName.value.trim(),p_region:region.value.trim(),p_allowed_vehicles:selected});routeName.value="";region.value="";fechar("modalRota");toast("Rota divulgada.");carregarRotas()}catch(e){toast(e.message||"Erro ao criar rota.")}
+  const shifts=turnosSelecionadosRota();
+  if(!routeName.value.trim()||!region.value.trim()||!selected.length||!shifts.length){toast("Preencha rota, região, veículo e turno.");return}
+  try{
+    await rpc("admin_create_route",{
+      p_password:adminPass,
+      p_route_name:routeName.value.trim(),
+      p_region:region.value.trim(),
+      p_allowed_vehicles:selected,
+      p_allowed_shifts:shifts
+    });
+    routeName.value="";
+    region.value="";
+    fechar("modalRota");
+    toast("Rota divulgada.");
+    carregarRotas();
+  }catch(e){toast(e.message||"Erro ao criar rota.")}
 }
 
 async function excluirRota(id){
@@ -751,7 +858,22 @@ async function reabrirRota(id){
 }
 
 async function criarMotorista(){
-  try{await rpc("admin_create_driver",{p_password:adminPass,p_driver_id:driverId.value.trim(),p_driver_name:driverName.value.trim(),p_vehicle_type:vehicleType.value,p_telephone:telephone.value.trim()});driverId.value="";driverName.value="";telephone.value="";fechar("modalMotorista");toast("Motorista cadastrado.")}catch(e){toast(e.message||"Erro ao cadastrar motorista.")}
+  try{
+    await rpc("admin_create_driver",{
+      p_password:adminPass,
+      p_driver_id:driverId.value.trim(),
+      p_driver_name:driverName.value.trim(),
+      p_vehicle_type:vehicleType.value,
+      p_shift:driverShift.value,
+      p_telephone:telephone.value.trim()
+    });
+    driverId.value="";
+    driverName.value="";
+    telephone.value="";
+    driverShift.value="AM";
+    fechar("modalMotorista");
+    toast("Motorista cadastrado.");
+  }catch(e){toast(e.message||"Erro ao cadastrar motorista.")}
 }
 
 
@@ -763,13 +885,96 @@ async function limparTodasRotas(){if(!rotas.length)return toast("Não há rotas 
 function normalizarTexto(v){return String(v??"").trim()}
 function normalizarVeiculo(v){return normalizarTexto(v).toUpperCase()}
 function validarVeiculo(v){return ["FIORINO","PASSEIO","MOTO","VAN"].includes(v)}
-function baixarModeloMotoristas(){const dados=[["driver_id","driver_name","vehicle_type","telephone"],["123456","MOTORISTA EXEMPLO","FIORINO","11999998888"],["789012","MOTORISTA EXEMPLO 2","PASSEIO","11988887777"]];const ws=XLSX.utils.aoa_to_sheet(dados),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Motoristas");XLSX.writeFile(wb,"modelo_motoristas.xlsx")}
-function baixarModeloRotas(){const dados=[["route_name","region","allowed_vehicles"],["B-14+B-15/120","Guarulhos","FIORINO,PASSEIO"],["A-10+A-11/95","São Paulo","MOTO"]];const ws=XLSX.utils.aoa_to_sheet(dados),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Rotas");XLSX.writeFile(wb,"modelo_rotas.xlsx")}
+function normalizarTurno(v){return normalizarTexto(v).toUpperCase()}
+function validarTurno(v){return ["AM","SD","PM2"].includes(v)}
+function baixarModeloMotoristas(){
+  const dados=[
+    ["driver_id","driver_name","vehicle_type","shift","telephone"],
+    ["123456","MOTORISTA EXEMPLO","FIORINO","AM","11999998888"],
+    ["789012","MOTORISTA EXEMPLO 2","PASSEIO","SD","11988887777"],
+    ["555888","MOTORISTA EXEMPLO 3","MOTO","PM2","11977776666"]
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(dados),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Motoristas");
+  XLSX.writeFile(wb,"modelo_motoristas.xlsx");
+}
+function baixarModeloRotas(){
+  const dados=[
+    ["route_name","region","allowed_vehicles","allowed_shifts"],
+    ["B-14+B-15/120","Guarulhos","FIORINO,PASSEIO","AM,SD"],
+    ["A-10+A-11/95","São Paulo","MOTO","PM2"]
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(dados),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Rotas");
+  XLSX.writeFile(wb,"modelo_rotas.xlsx");
+}
 async function lerArquivo(file){const nome=file.name.toLowerCase();if(nome.endsWith(".xlsx")||nome.endsWith(".xls")){const buffer=await file.arrayBuffer();const wb=XLSX.read(buffer,{type:"array"});const ws=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(ws,{defval:""})}if(nome.endsWith(".csv")){const texto=await file.text();const linhas=texto.split(/\r?\n/).filter(Boolean).map(l=>l.split(","));const header=linhas[0].map(h=>h.trim());return linhas.slice(1).map(l=>Object.fromEntries(header.map((h,i)=>[h,l[i]||""])))}throw new Error("Formato inválido.")}
-async function importarMotoristasArquivo(){const file=arquivoMotoristas.files[0];if(!file)return toast("Selecione um arquivo.");const rows=await lerArquivo(file);let ok=0,erros=[];for(let i=0;i<rows.length;i++){const r=rows[i];const body={p_password:adminPass,p_driver_id:normalizarTexto(r.driver_id),p_driver_name:normalizarTexto(r.driver_name),p_vehicle_type:normalizarVeiculo(r.vehicle_type),p_telephone:normalizarTexto(r.telephone)};if(!body.p_driver_id||!body.p_driver_name||!validarVeiculo(body.p_vehicle_type)){erros.push(`Linha ${i+2}: inválida`);continue}try{await rpc("admin_create_driver",body);ok++}catch(e){erros.push(`Linha ${i+2}: ${e.message}`)}}resultadoMotoristasMassa.style.display="block";resultadoMotoristasMassa.innerText=`Importados/atualizados: ${ok}`+(erros.length?`\n\nOcorrências:\n${erros.join("\n")}`:"");toast("Importação finalizada.")}
-async function importarRotasArquivo(){const file=arquivoRotas.files[0];if(!file)return toast("Selecione um arquivo.");const rows=await lerArquivo(file);let ok=0,erros=[];for(let i=0;i<rows.length;i++){const r=rows[i];const route=normalizarTexto(r.route_name),reg=normalizarTexto(r.region),veic=String(r.allowed_vehicles||"").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean);if(!route||!reg||!veic.length){erros.push(`Linha ${i+2}: inválida`);continue}try{await rpc("admin_create_route",{p_password:adminPass,p_route_name:route,p_region:reg,p_allowed_vehicles:[...new Set(veic)]});ok++}catch(e){erros.push(`Linha ${i+2}: ${e.message}`)}}resultadoRotasMassa.style.display="block";resultadoRotasMassa.innerText=`Rotas importadas: ${ok}`+(erros.length?`\n\nOcorrências:\n${erros.join("\n")}`:"");carregarRotas();toast("Importação finalizada.")}
-async function consultarMotorista(){const id=consultaId.value.trim();if(!id)return toast("Informe o ID.");try{const data=await rpc("admin_get_driver",{p_password:adminPass,p_driver_id:id});if(!data)return toast("Motorista não encontrado.");motoristaAtual=data;boxMotorista.style.display="block";dadosMotorista.innerHTML=`ID: <strong>${data.driver_id}</strong><br>Nome: <strong>${data.driver_name}</strong><br>Status: <strong>${data.active?"ATIVO":"DESATIVADO"}</strong><br>Punição até: <strong>${fmtData(data.punished_until)}</strong>`;editTelephone.value=data.telephone||"";editVehicleType.value=data.vehicle_type||"FIORINO"}catch(e){toast(e.message||"Erro ao consultar.")}}
-async function salvarMotorista(){if(!motoristaAtual)return;try{await rpc("admin_update_driver",{p_password:adminPass,p_driver_id:motoristaAtual.driver_id,p_vehicle_type:editVehicleType.value,p_telephone:editTelephone.value.trim()});toast("Motorista atualizado.");consultarMotorista()}catch(e){toast(e.message||"Erro ao salvar.")}}
+async function importarMotoristasArquivo(){
+  const file=arquivoMotoristas.files[0];
+  if(!file)return toast("Selecione um arquivo.");
+  const rows=await lerArquivo(file);
+  let ok=0,erros=[];
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i];
+    const body={
+      p_password:adminPass,
+      p_driver_id:normalizarTexto(r.driver_id),
+      p_driver_name:normalizarTexto(r.driver_name),
+      p_vehicle_type:normalizarVeiculo(r.vehicle_type),
+      p_shift:normalizarTurno(r.shift),
+      p_telephone:normalizarTexto(r.telephone)
+    };
+    if(!body.p_driver_id||!body.p_driver_name||!validarVeiculo(body.p_vehicle_type)||!validarTurno(body.p_shift)){
+      erros.push(`Linha ${i+2}: inválida`);
+      continue;
+    }
+    try{await rpc("admin_create_driver",body);ok++}catch(e){erros.push(`Linha ${i+2}: ${e.message}`)}
+  }
+  resultadoMotoristasMassa.style.display="block";
+  resultadoMotoristasMassa.innerText=`Importados/atualizados: ${ok}`+(erros.length?`
+
+Ocorrências:
+${erros.join("
+")}`:"");
+  toast("Importação finalizada.");
+}
+async function importarRotasArquivo(){
+  const file=arquivoRotas.files[0];
+  if(!file)return toast("Selecione um arquivo.");
+  const rows=await lerArquivo(file);
+  let ok=0,erros=[];
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i];
+    const route=normalizarTexto(r.route_name);
+    const reg=normalizarTexto(r.region);
+    const veic=String(r.allowed_vehicles||"").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean);
+    const shifts=String(r.allowed_shifts||"").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean);
+    if(!route||!reg||!veic.length||!shifts.length||shifts.some(s=>!validarTurno(s))){
+      erros.push(`Linha ${i+2}: inválida`);
+      continue;
+    }
+    try{
+      await rpc("admin_create_route",{
+        p_password:adminPass,
+        p_route_name:route,
+        p_region:reg,
+        p_allowed_vehicles:[...new Set(veic)],
+        p_allowed_shifts:[...new Set(shifts)]
+      });
+      ok++;
+    }catch(e){erros.push(`Linha ${i+2}: ${e.message}`)}
+  }
+  resultadoRotasMassa.style.display="block";
+  resultadoRotasMassa.innerText=`Rotas importadas: ${ok}`+(erros.length?`
+
+Ocorrências:
+${erros.join("
+")}`:"");
+  carregarRotas();
+  toast("Importação finalizada.");
+}
+async function consultarMotorista(){const id=consultaId.value.trim();if(!id)return toast("Informe o ID.");try{const data=await rpc("admin_get_driver",{p_password:adminPass,p_driver_id:id});if(!data)return toast("Motorista não encontrado.");motoristaAtual=data;boxMotorista.style.display="block";dadosMotorista.innerHTML=`ID: <strong>${data.driver_id}</strong><br>Nome: <strong>${data.driver_name}</strong><br>Status: <strong>${data.active?"ATIVO":"DESATIVADO"}</strong><br>Turno: <strong>${data.shift||"-"}</strong><br>Punição até: <strong>${fmtData(data.punished_until)}</strong>`;editTelephone.value=data.telephone||"";editVehicleType.value=data.vehicle_type||"FIORINO";editShift.value=data.shift||"AM"}catch(e){toast(e.message||"Erro ao consultar.")}}
+async function salvarMotorista(){if(!motoristaAtual)return;try{await rpc("admin_update_driver",{p_password:adminPass,p_driver_id:motoristaAtual.driver_id,p_vehicle_type:editVehicleType.value,p_shift:editShift.value,p_telephone:editTelephone.value.trim()});toast("Motorista atualizado.");consultarMotorista()}catch(e){toast(e.message||"Erro ao salvar.")}}
 async function toggleMotorista(){if(!motoristaAtual)return;try{await rpc("admin_toggle_driver",{p_password:adminPass,p_driver_id:motoristaAtual.driver_id});toast("Status alterado.");consultarMotorista()}catch(e){toast(e.message||"Erro ao alterar status.")}}
 async function punirMotorista(){if(!motoristaAtual)return;try{await rpc("admin_punish_driver",{p_password:adminPass,p_driver_id:motoristaAtual.driver_id,p_amount:Number(punishAmount.value||15),p_unit:punishUnit.value});toast("Punição aplicada.");consultarMotorista()}catch(e){toast(e.message||"Erro ao aplicar punição.")}}
 async function removerPunicao(){if(!motoristaAtual)return;try{await rpc("admin_remove_punish_driver",{p_password:adminPass,p_driver_id:motoristaAtual.driver_id});toast("Punição removida.");consultarMotorista()}catch(e){toast(e.message||"Erro ao remover punição.")}}
@@ -810,7 +1015,7 @@ async function carregarWaiting(){
 
       <div class="waiting-main">
         <h3>${w.driver_name || "-"}</h3>
-        <p><strong>ID:</strong> ${w.driver_id || "-"} | <strong>Veículo:</strong> ${w.vehicle_type || "-"}</p>
+        <p><strong>ID:</strong> ${w.driver_id || "-"} | <strong>Veículo:</strong> ${w.vehicle_type || "-"} | <strong>Turno:</strong> ${w.shift || "-"}</p>
         <p><strong>Telefone:</strong> ${w.telephone || "-"}</p>
       </div>
 
@@ -845,4 +1050,4 @@ if(adminPass){
 }
 </script>
 </body>
-</html>
+</html>  
