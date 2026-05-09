@@ -528,6 +528,38 @@ input:focus,select:focus{
   margin:4px 5px 4px 0;
 }
 
+
+.global-shift-filter{
+  width:100%;
+  display:grid;
+  grid-template-columns:minmax(260px,1fr) repeat(3,minmax(120px,150px));
+  gap:10px;
+  align-items:center;
+  padding:14px;
+  margin-top:6px;
+  border:1px solid rgba(238,77,45,.24);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(2,6,23,.72),rgba(15,23,42,.82));
+}
+
+.global-shift-filter strong{
+  display:block;
+  color:#fff;
+  font-size:15px;
+}
+
+.global-shift-filter small{
+  display:block;
+  color:#cbd5e1;
+  margin-top:4px;
+}
+
+@media(max-width:980px){
+  .global-shift-filter{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 </head>
 
@@ -566,6 +598,15 @@ input:focus,select:focus{
         <button class="btn-dark" onclick="desmarcarRotas()">Desmarcar</button>
         <button class="btn-danger" onclick="limparRotasSelecionadas()">Excluir selecionadas</button>
         <button class="btn-danger" onclick="limparTodasRotas()">Excluir todas</button>
+        <div class="global-shift-filter">
+          <div>
+            <strong>Turnos liberados nas rotas publicadas</strong>
+            <small>Altere aqui quais turnos podem pegar as rotas disponíveis.</small>
+          </div>
+          <label class="shift-switch">AM <input type="checkbox" class="globalTurno" value="AM" checked onchange="salvarTurnosGlobais()"></label>
+          <label class="shift-switch">SD <input type="checkbox" class="globalTurno" value="SD" checked onchange="salvarTurnosGlobais()"></label>
+          <label class="shift-switch">PM2 <input type="checkbox" class="globalTurno" value="PM2" checked onchange="salvarTurnosGlobais()"></label>
+        </div>
       </div>
 
       <div id="listaRotas" class="route-list"></div>
@@ -612,14 +653,7 @@ input:focus,select:focus{
       <label class="vehicle-check"><input type="checkbox" class="rotaVeiculo" value="MOTO"> MOTO</label>
       <label class="vehicle-check"><input type="checkbox" class="rotaVeiculo" value="VAN"> VAN</label>
     </div>
-    <label>Turnos liberados para pegar esta rota</label>
-    <div class="shift-options">
-      <label class="shift-switch">AM <input type="checkbox" class="rotaTurno" value="AM" checked></label>
-      <label class="shift-switch">SD <input type="checkbox" class="rotaTurno" value="SD" checked></label>
-      <label class="shift-switch">PM2 <input type="checkbox" class="rotaTurno" value="PM2" checked></label>
-    </div>
-
-    <div class="notice">Status inicial: DISPONÍVEL<br>Somente motoristas com veículo e turno liberados poderão pegar esta rota.</div>
+    <div class="notice">Status inicial: DISPONÍVEL<br>Somente motoristas com veículo selecionado e turno liberado no filtro geral poderão pegar esta rota.</div>
     <button onclick="criarRota()">Divulgar rota</button>
   </div>
 </div>
@@ -629,16 +663,13 @@ input:focus,select:focus{
   <div class="box large">
     <button class="close" onclick="fechar('modalRotasMassa')">×</button>
     <h2>Divulgação em massa</h2>
-    <p class="muted">Envie CSV/XLSX com colunas: <strong>route_name, region, allowed_vehicles, allowed_shifts</strong></p>
+    <p class="muted">Envie CSV/XLSX com colunas: <strong>route_name, region, allowed_vehicles</strong></p>
     <div class="notice">Exemplo de veículos:
 FIORINO,MOTO
 PASSEIO
 FIORINO,PASSEIO,VAN
 
-Exemplo de turnos:
-AM
-AM,SD
-AM,SD,PM2</div>
+Os turnos permitidos serão definidos pelo filtro geral do painel.</div>
     <button class="btn-info" onclick="baixarModeloRotas()">Baixar modelo Excel</button>
     <input type="file" id="arquivoRotas" accept=".csv,.xlsx,.xls">
     <div class="actions">
@@ -767,8 +798,15 @@ async function iniciar(){
 }
 
 async function carregarRotas(){
-  try{rotas=await rpc("admin_get_routes",{p_password:adminPass})||[];}catch(e){toast("Erro ao carregar rotas.");return}
+  try{
+    rotas = await rpc("admin_get_routes", {p_password:adminPass}) || [];
+  }catch(e){
+    toast("Erro ao carregar rotas.");
+    return;
+  }
+
   renderRotas();
+  aplicarTurnosGlobaisNaTela();
 }
 
 function fmtVeiculos(v){return Array.isArray(v)?v.join(", "):"-"}
@@ -825,12 +863,45 @@ function renderRotas(){
 }
 
 function veiculosSelecionadosRota(){return Array.from(document.querySelectorAll(".rotaVeiculo:checked")).map(i=>i.value)}
-function turnosSelecionadosRota(){return Array.from(document.querySelectorAll(".rotaTurno:checked")).map(i=>i.value)}
+function turnosSelecionadosRota(){return Array.from(document.querySelectorAll(".globalTurno:checked")).map(i=>i.value)}
 function fmtTurnos(v){return Array.isArray(v)?v.join(", "):"-"}
+
+function aplicarTurnosGlobaisNaTela(){
+  if(!rotas.length)return;
+  const ultima = rotas.find(r => Array.isArray(r.allowed_shifts) && r.allowed_shifts.length);
+  const turnos = ultima && ultima.allowed_shifts ? ultima.allowed_shifts : ["AM","SD","PM2"];
+
+  document.querySelectorAll(".globalTurno").forEach(input=>{
+    input.checked = turnos.includes(input.value);
+  });
+}
+
+async function salvarTurnosGlobais(){
+  const shifts = turnosSelecionadosRota();
+
+  if(!shifts.length){
+    toast("Selecione pelo menos um turno.");
+    document.querySelector('.globalTurno[value="AM"]').checked = true;
+    return;
+  }
+
+  try{
+    await rpc("admin_update_all_route_shifts", {
+      p_password: adminPass,
+      p_allowed_shifts: shifts
+    });
+
+    toast("Turnos liberados atualizados.");
+    carregarRotas();
+  }catch(e){
+    toast(e.message || "Erro ao atualizar turnos.");
+  }
+}
+
 async function criarRota(){
   const selected=veiculosSelecionadosRota();
   const shifts=turnosSelecionadosRota();
-  if(!routeName.value.trim()||!region.value.trim()||!selected.length||!shifts.length){toast("Preencha rota, região, veículo e turno.");return}
+  if(!routeName.value.trim()||!region.value.trim()||!selected.length||!shifts.length){toast("Preencha rota, região, veículo e libere pelo menos um turno no filtro geral.");return}
   try{
     await rpc("admin_create_route",{
       p_password:adminPass,
@@ -900,9 +971,9 @@ function baixarModeloMotoristas(){
 }
 function baixarModeloRotas(){
   const dados=[
-    ["route_name","region","allowed_vehicles","allowed_shifts"],
-    ["B-14+B-15/120","Guarulhos","FIORINO,PASSEIO","AM,SD"],
-    ["A-10+A-11/95","São Paulo","MOTO","PM2"]
+    ["route_name","region","allowed_vehicles"],
+    ["B-14+B-15/120","Guarulhos","FIORINO,PASSEIO"],
+    ["A-10+A-11/95","São Paulo","MOTO"]
   ];
   const ws=XLSX.utils.aoa_to_sheet(dados),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"Rotas");
@@ -947,8 +1018,8 @@ async function importarMotoristasArquivo(){
 
   resultadoMotoristasMassa.style.display = "block";
   resultadoMotoristasMassa.innerText =
-    `Importados/atualizados: ${ok}` +
-    (erros.length ? `\n\nOcorrências:\n${erros.join("\n")}` : "");
+    "Importados/atualizados: " + ok +
+    (erros.length ? "\n\nOcorrências:\n" + erros.join("\n") : "");
 
   toast("Importação finalizada.");
 }
@@ -957,6 +1028,12 @@ async function importarRotasArquivo(){
 
   if(!file){
     return toast("Selecione um arquivo.");
+  }
+
+  const shiftsGlobais = turnosSelecionadosRota();
+
+  if(!shiftsGlobais.length){
+    return toast("Libere pelo menos um turno no filtro geral.");
   }
 
   const rows = await lerArquivo(file);
@@ -973,12 +1050,7 @@ async function importarRotasArquivo(){
       .map(v => v.trim().toUpperCase())
       .filter(Boolean);
 
-    const shifts = String(r.allowed_shifts || "")
-      .split(",")
-      .map(v => v.trim().toUpperCase())
-      .filter(Boolean);
-
-    if(!route || !reg || !veic.length || !shifts.length || shifts.some(s => !validarTurno(s))){
+    if(!route || !reg || !veic.length){
       erros.push(`Linha ${i + 2}: inválida`);
       continue;
     }
@@ -989,7 +1061,7 @@ async function importarRotasArquivo(){
         p_route_name: route,
         p_region: reg,
         p_allowed_vehicles: [...new Set(veic)],
-        p_allowed_shifts: [...new Set(shifts)]
+        p_allowed_shifts: shiftsGlobais
       });
 
       ok++;
@@ -1000,8 +1072,8 @@ async function importarRotasArquivo(){
 
   resultadoRotasMassa.style.display = "block";
   resultadoRotasMassa.innerText =
-    `Rotas importadas: ${ok}` +
-    (erros.length ? `\n\nOcorrências:\n${erros.join("\n")}` : "");
+    "Rotas importadas: " + ok +
+    (erros.length ? "\n\nOcorrências:\n" + erros.join("\n") : "");
 
   carregarRotas();
   toast("Importação finalizada.");
