@@ -1012,7 +1012,7 @@ function renderRotas(){
           <p><strong>Motorista:</strong> ${r.claimed_by_driver_name || "-"}</p>
           <p><strong>ID:</strong> ${r.claimed_by_driver_id || "-"}</p>
           <p><strong>Veículo:</strong> ${r.claimed_vehicle_type || "-"}</p>
-          <p><strong>Turno:</strong> ${r.claimed_shift || "-"}</p>
+          <p><strong>Turno:</strong> ${r.claimed_shift || r.driver_shift || "-"}</p>
           <p><strong>Telefone:</strong> ${r.claimed_telephone || "-"}</p>
           <p><strong>Horário:</strong> ${fmtData(r.claimed_at)}</p>
         </div>
