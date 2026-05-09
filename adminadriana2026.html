@@ -560,12 +560,87 @@ input:focus,select:focus{
   }
 }
 
+
+.admin-message-box{
+  text-align:center;
+}
+
+.admin-message-icon{
+  width:68px;
+  height:68px;
+  border-radius:22px;
+  display:grid;
+  place-items:center;
+  margin:0 auto 16px;
+  font-size:34px;
+  font-weight:900;
+  background:rgba(238,77,45,.16);
+  border:1px solid rgba(238,77,45,.38);
+  color:#ffb199;
+}
+
+.admin-message-box h2{
+  margin:0 0 10px;
+  font-size:28px;
+  color:#fff;
+}
+
+.admin-message-box p{
+  color:#cbd5e1;
+  line-height:1.5;
+}
+
+.admin-message-actions{
+  display:grid;
+  gap:10px;
+  margin-top:18px;
+}
+
+.admin-confirm-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:18px;
+}
+
+@media(max-width:560px){
+  .admin-confirm-actions{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 </head>
 
 <body class="locked">
 
 <div id="toast" class="toast"></div>
+
+<div id="modalMsg" class="modal">
+  <div class="box admin-message-box">
+    <button class="close" onclick="fechar('modalMsg')">×</button>
+    <div class="admin-message-icon" id="msgIcon">!</div>
+    <h2 id="msgTitulo">Aviso</h2>
+    <p id="msgTexto">Mensagem</p>
+    <div class="admin-message-actions">
+      <button onclick="fechar('modalMsg')">Entendi</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalConfirmacao" class="modal">
+  <div class="box admin-message-box">
+    <button class="close" onclick="fechar('modalConfirmacao')">×</button>
+    <div class="admin-message-icon" id="confirmIcon">!</div>
+    <h2 id="confirmTitulo">Confirmar ação</h2>
+    <p id="confirmTexto">Tem certeza?</p>
+    <div class="admin-confirm-actions">
+      <button class="btn-dark" onclick="cancelarConfirmacao()">Cancelar</button>
+      <button class="btn-danger" id="confirmBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 
 <div class="app">
   <div class="header">
@@ -762,10 +837,40 @@ let adminPass=sessionStorage.getItem("adminPass")||"";
 let rotas=[];
 let waiting=[];
 let motoristaAtual=null;
+let turnosGlobaisConfig=["AM","SD","PM2"];
 
 function abrir(id){document.getElementById(id).classList.add("show")}
 function fechar(id){document.getElementById(id).classList.remove("show")}
-function toast(t){const e=document.getElementById("toast");e.innerText=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2600)}
+function toast(t,titulo="Aviso",icon="!"){
+  if(document.getElementById("msgIcon")) msgIcon.innerText=icon;
+  if(document.getElementById("msgTitulo")) msgTitulo.innerText=titulo;
+  if(document.getElementById("msgTexto")) msgTexto.innerText=t;
+  abrir("modalMsg");
+}
+
+let acaoConfirmacao=null;
+
+function confirmarModal(titulo,texto,callback,icon="!"){
+  acaoConfirmacao=callback;
+  if(document.getElementById("confirmIcon")) confirmIcon.innerText=icon;
+  if(document.getElementById("confirmTitulo")) confirmTitulo.innerText=titulo;
+  if(document.getElementById("confirmTexto")) confirmTexto.innerText=texto;
+  abrir("modalConfirmacao");
+}
+
+function cancelarConfirmacao(){
+  acaoConfirmacao=null;
+  fechar("modalConfirmacao");
+}
+
+document.addEventListener("click",function(e){
+  if(e.target && e.target.id==="confirmBtn"){
+    const cb=acaoConfirmacao;
+    acaoConfirmacao=null;
+    fechar("modalConfirmacao");
+    if(typeof cb==="function") cb();
+  }
+});
 async function rpc(name,args){const {data,error}=await sb.rpc(name,args);if(error)throw error;if(data&&data.success===false)throw new Error(data.error||"Operação não autorizada.");return data;}
 
 async function login(){
@@ -785,6 +890,7 @@ function sair(){
 }
 
 async function iniciar(){
+  await carregarTurnosGlobais();
   await carregarRotas();
   await carregarWaiting();
 
@@ -806,7 +912,6 @@ async function carregarRotas(){
   }
 
   renderRotas();
-  aplicarTurnosGlobaisNaTela();
 }
 
 function fmtVeiculos(v){return Array.isArray(v)?v.join(", "):"-"}
@@ -866,13 +971,29 @@ function veiculosSelecionadosRota(){return Array.from(document.querySelectorAll(
 function turnosSelecionadosRota(){return Array.from(document.querySelectorAll(".globalTurno:checked")).map(i=>i.value)}
 function fmtTurnos(v){return Array.isArray(v)?v.join(", "):"-"}
 
-function aplicarTurnosGlobaisNaTela(){
-  if(!rotas.length)return;
-  const ultima = rotas.find(r => Array.isArray(r.allowed_shifts) && r.allowed_shifts.length);
-  const turnos = ultima && ultima.allowed_shifts ? ultima.allowed_shifts : ["AM","SD","PM2"];
+async function carregarTurnosGlobais(){
+  try{
+    const {data,error}=await sb.rpc("get_hub_config_public");
+    if(error) throw error;
 
+    const cfg = Array.isArray(data) ? data[0] : data;
+
+    if(cfg && Array.isArray(cfg.global_allowed_shifts) && cfg.global_allowed_shifts.length){
+      turnosGlobaisConfig = cfg.global_allowed_shifts;
+    }else{
+      turnosGlobaisConfig = ["AM","SD","PM2"];
+    }
+
+    aplicarTurnosGlobaisNaTela();
+  }catch(e){
+    turnosGlobaisConfig = ["AM","SD","PM2"];
+    aplicarTurnosGlobaisNaTela();
+  }
+}
+
+function aplicarTurnosGlobaisNaTela(){
   document.querySelectorAll(".globalTurno").forEach(input=>{
-    input.checked = turnos.includes(input.value);
+    input.checked = turnosGlobaisConfig.includes(input.value);
   });
 }
 
@@ -881,9 +1002,11 @@ async function salvarTurnosGlobais(){
 
   if(!shifts.length){
     toast("Selecione pelo menos um turno.");
-    document.querySelector('.globalTurno[value="AM"]').checked = true;
+    aplicarTurnosGlobaisNaTela();
     return;
   }
+
+  turnosGlobaisConfig = shifts;
 
   try{
     await rpc("admin_update_all_route_shifts", {
@@ -895,6 +1018,7 @@ async function salvarTurnosGlobais(){
     carregarRotas();
   }catch(e){
     toast(e.message || "Erro ao atualizar turnos.");
+    await carregarTurnosGlobais();
   }
 }
 
@@ -919,13 +1043,27 @@ async function criarRota(){
 }
 
 async function excluirRota(id){
-  if(!confirm("Deseja excluir esta rota?"))return;
-  try{await rpc("admin_delete_route",{p_password:adminPass,p_route_id:id});toast("Rota excluída.");carregarRotas()}catch(e){toast(e.message||"Erro ao excluir.")}
+  confirmarModal("Excluir rota","Deseja excluir esta rota do sistema?",async()=>{
+    try{
+      await rpc("admin_delete_route",{p_password:adminPass,p_route_id:id});
+      toast("Rota excluída.","Tudo certo","✓");
+      carregarRotas();
+    }catch(e){
+      toast(e.message||"Erro ao excluir.","Erro","!");
+    }
+  });
 }
 
 async function reabrirRota(id){
-  if(!confirm("Deseja abrir esta rota novamente?"))return;
-  try{await rpc("admin_reopen_route",{p_password:adminPass,p_route_id:id});toast("Rota reaberta.");carregarRotas()}catch(e){toast(e.message||"Erro ao reabrir.")}
+  confirmarModal("Abrir rota novamente","Deseja deixar esta rota disponível para os motoristas?",async()=>{
+    try{
+      await rpc("admin_reopen_route",{p_password:adminPass,p_route_id:id});
+      toast("Rota reaberta.","Tudo certo","✓");
+      carregarRotas();
+    }catch(e){
+      toast(e.message||"Erro ao reabrir.","Erro","!");
+    }
+  },"?");
 }
 
 async function criarMotorista(){
@@ -951,23 +1089,18 @@ async function criarMotorista(){
 function idsRotasSelecionadas(){return Array.from(document.querySelectorAll(".rotaCheck:checked")).map(i=>Number(i.value)).filter(Boolean)}
 function selecionarRotasVisiveis(){document.querySelectorAll(".rotaCheck").forEach(i=>i.checked=true)}
 function desmarcarRotas(){document.querySelectorAll(".rotaCheck").forEach(i=>i.checked=false)}
-async function limparRotasSelecionadas(){const ids=idsRotasSelecionadas();if(!ids.length)return toast("Selecione ao menos uma rota.");if(!confirm(`Excluir ${ids.length} rota(s)?`))return;for(const id of ids)await rpc("admin_delete_route",{p_password:adminPass,p_route_id:id});toast("Rotas excluídas.");carregarRotas()}
-async function limparTodasRotas(){if(!rotas.length)return toast("Não há rotas para limpar.");if(!confirm(`Excluir todas as ${rotas.length} rotas?`))return;for(const r of rotas)await rpc("admin_delete_route",{p_password:adminPass,p_route_id:r.id});toast("Todas as rotas foram excluídas.");carregarRotas()}
-function normalizarTexto(v){return String(v??"").trim()}
-function normalizarVeiculo(v){return normalizarTexto(v).toUpperCase()}
-function validarVeiculo(v){return ["FIORINO","PASSEIO","MOTO","VAN"].includes(v)}
-function normalizarTurno(v){return normalizarTexto(v).toUpperCase()}
-function validarTurno(v){return ["AM","SD","PM2"].includes(v)}
-function baixarModeloMotoristas(){
-  const dados=[
-    ["driver_id","driver_name","vehicle_type","shift","telephone"],
-    ["123456","MOTORISTA EXEMPLO","FIORINO","AM","11999998888"],
-    ["789012","MOTORISTA EXEMPLO 2","PASSEIO","SD","11988887777"],
-    ["555888","MOTORISTA EXEMPLO 3","MOTO","PM2","11977776666"]
-  ];
-  const ws=XLSX.utils.aoa_to_sheet(dados),wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"Motoristas");
-  XLSX.writeFile(wb,"modelo_motoristas.xlsx");
+async function limparRotasSelecionadas(){
+  const ids=idsRotasSelecionadas();
+  if(!ids.length)return toast("Selecione ao menos uma rota.","Atenção","!");
+  confirmarModal("Excluir selecionadas",`Deseja excluir ${ids.length} rota(s) selecionada(s)?`,async()=>{
+    try{
+      for(const id of ids)await rpc("admin_delete_route",{p_password:adminPass,p_route_id:id});
+      toast("Rotas excluídas.","Tudo certo","✓");
+      carregarRotas();
+    }catch(e){
+      toast(e.message||"Erro ao excluir rotas.","Erro","!");
+    }
+  });
 }
 function baixarModeloRotas(){
   const dados=[
@@ -1137,19 +1270,14 @@ async function carregarWaiting(){
   `).join(""):'<div class="notice">Nenhum motorista aguardando rota no galpão hoje.</div>';
 }
 
-async function excluirWaiting(id){if(!confirm("Remover presença?"))return;try{await rpc("admin_delete_waiting",{p_password:adminPass,p_id:id});toast("Presença removida.");carregarWaiting()}catch(e){toast(e.message||"Erro ao remover.")}}
-function idsWaitingSelecionados(){return Array.from(document.querySelectorAll(".waitingCheck:checked")).map(i=>Number(i.value)).filter(Boolean)}
-function selecionarWaitingVisiveis(){document.querySelectorAll(".waitingCheck").forEach(i=>i.checked=true)}
-function desmarcarWaiting(){document.querySelectorAll(".waitingCheck").forEach(i=>i.checked=false)}
-async function limparWaitingSelecionados(){const ids=idsWaitingSelecionados();if(!ids.length)return toast("Selecione ao menos um registro.");if(!confirm(`Excluir ${ids.length} registro(s)?`))return;for(const id of ids)await rpc("admin_delete_waiting",{p_password:adminPass,p_id:id});toast("Registros excluídos.");carregarWaiting()}
-async function limparWaitingHoje(){if(!confirm("Limpar todos os motoristas do galpão de hoje?"))return;try{await rpc("admin_clear_waiting_today",{p_password:adminPass});toast("Galpão limpo.");carregarWaiting()}catch(e){toast(e.message||"Erro ao limpar.")}}
-
-if(adminPass){
-  sb.rpc("admin_login",{p_password:adminPass}).then(({data})=>{
-    if(data){
-      document.body.classList.remove("locked");
-      fechar("modalLogin");
-      iniciar();
+async function excluirWaiting(id){
+  confirmarModal("Remover presença","Deseja remover este motorista da lista do galpão?",async()=>{
+    try{
+      await rpc("admin_delete_waiting",{p_password:adminPass,p_id:id});
+      toast("Presença removida.","Tudo certo","✓");
+      carregarWaiting();
+    }catch(e){
+      toast(e.message||"Erro ao remover.","Erro","!");
     }
   });
 }
