@@ -910,66 +910,99 @@ function baixarModeloRotas(){
 }
 async function lerArquivo(file){const nome=file.name.toLowerCase();if(nome.endsWith(".xlsx")||nome.endsWith(".xls")){const buffer=await file.arrayBuffer();const wb=XLSX.read(buffer,{type:"array"});const ws=wb.Sheets[wb.SheetNames[0]];return XLSX.utils.sheet_to_json(ws,{defval:""})}if(nome.endsWith(".csv")){const texto=await file.text();const linhas=texto.split(/\r?\n/).filter(Boolean).map(l=>l.split(","));const header=linhas[0].map(h=>h.trim());return linhas.slice(1).map(l=>Object.fromEntries(header.map((h,i)=>[h,l[i]||""])))}throw new Error("Formato inválido.")}
 async function importarMotoristasArquivo(){
-  const file=arquivoMotoristas.files[0];
-  if(!file)return toast("Selecione um arquivo.");
-  const rows=await lerArquivo(file);
-  let ok=0,erros=[];
-  for(let i=0;i<rows.length;i++){
-    const r=rows[i];
-    const body={
-      p_password:adminPass,
-      p_driver_id:normalizarTexto(r.driver_id),
-      p_driver_name:normalizarTexto(r.driver_name),
-      p_vehicle_type:normalizarVeiculo(r.vehicle_type),
-      p_shift:normalizarTurno(r.shift),
-      p_telephone:normalizarTexto(r.telephone)
+  const file = arquivoMotoristas.files[0];
+
+  if(!file){
+    return toast("Selecione um arquivo.");
+  }
+
+  const rows = await lerArquivo(file);
+  let ok = 0;
+  let erros = [];
+
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+
+    const body = {
+      p_password: adminPass,
+      p_driver_id: normalizarTexto(r.driver_id),
+      p_driver_name: normalizarTexto(r.driver_name),
+      p_vehicle_type: normalizarVeiculo(r.vehicle_type),
+      p_shift: normalizarTurno(r.shift),
+      p_telephone: normalizarTexto(r.telephone)
     };
-    if(!body.p_driver_id||!body.p_driver_name||!validarVeiculo(body.p_vehicle_type)||!validarTurno(body.p_shift)){
-      erros.push(`Linha ${i+2}: inválida`);
+
+    if(!body.p_driver_id || !body.p_driver_name || !validarVeiculo(body.p_vehicle_type) || !validarTurno(body.p_shift)){
+      erros.push(`Linha ${i + 2}: inválida`);
       continue;
     }
-    try{await rpc("admin_create_driver",body);ok++}catch(e){erros.push(`Linha ${i+2}: ${e.message}`)}
-  }
-  resultadoMotoristasMassa.style.display="block";
-  resultadoMotoristasMassa.innerText=`Importados/atualizados: ${ok}`+(erros.length?`
 
-Ocorrências:
-${erros.join("
-")}`:"");
+    try{
+      await rpc("admin_create_driver", body);
+      ok++;
+    }catch(e){
+      erros.push(`Linha ${i + 2}: ${e.message}`);
+    }
+  }
+
+  resultadoMotoristasMassa.style.display = "block";
+  resultadoMotoristasMassa.innerText =
+    `Importados/atualizados: ${ok}` +
+    (erros.length ? `\n\nOcorrências:\n${erros.join("\n")}` : "");
+
   toast("Importação finalizada.");
 }
 async function importarRotasArquivo(){
-  const file=arquivoRotas.files[0];
-  if(!file)return toast("Selecione um arquivo.");
-  const rows=await lerArquivo(file);
-  let ok=0,erros=[];
-  for(let i=0;i<rows.length;i++){
-    const r=rows[i];
-    const route=normalizarTexto(r.route_name);
-    const reg=normalizarTexto(r.region);
-    const veic=String(r.allowed_vehicles||"").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean);
-    const shifts=String(r.allowed_shifts||"").split(",").map(v=>v.trim().toUpperCase()).filter(Boolean);
-    if(!route||!reg||!veic.length||!shifts.length||shifts.some(s=>!validarTurno(s))){
-      erros.push(`Linha ${i+2}: inválida`);
+  const file = arquivoRotas.files[0];
+
+  if(!file){
+    return toast("Selecione um arquivo.");
+  }
+
+  const rows = await lerArquivo(file);
+  let ok = 0;
+  let erros = [];
+
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+
+    const route = normalizarTexto(r.route_name);
+    const reg = normalizarTexto(r.region);
+    const veic = String(r.allowed_vehicles || "")
+      .split(",")
+      .map(v => v.trim().toUpperCase())
+      .filter(Boolean);
+
+    const shifts = String(r.allowed_shifts || "")
+      .split(",")
+      .map(v => v.trim().toUpperCase())
+      .filter(Boolean);
+
+    if(!route || !reg || !veic.length || !shifts.length || shifts.some(s => !validarTurno(s))){
+      erros.push(`Linha ${i + 2}: inválida`);
       continue;
     }
-    try{
-      await rpc("admin_create_route",{
-        p_password:adminPass,
-        p_route_name:route,
-        p_region:reg,
-        p_allowed_vehicles:[...new Set(veic)],
-        p_allowed_shifts:[...new Set(shifts)]
-      });
-      ok++;
-    }catch(e){erros.push(`Linha ${i+2}: ${e.message}`)}
-  }
-  resultadoRotasMassa.style.display="block";
-  resultadoRotasMassa.innerText=`Rotas importadas: ${ok}`+(erros.length?`
 
-Ocorrências:
-${erros.join("
-")}`:"");
+    try{
+      await rpc("admin_create_route", {
+        p_password: adminPass,
+        p_route_name: route,
+        p_region: reg,
+        p_allowed_vehicles: [...new Set(veic)],
+        p_allowed_shifts: [...new Set(shifts)]
+      });
+
+      ok++;
+    }catch(e){
+      erros.push(`Linha ${i + 2}: ${e.message}`);
+    }
+  }
+
+  resultadoRotasMassa.style.display = "block";
+  resultadoRotasMassa.innerText =
+    `Rotas importadas: ${ok}` +
+    (erros.length ? `\n\nOcorrências:\n${erros.join("\n")}` : "");
+
   carregarRotas();
   toast("Importação finalizada.");
 }
@@ -1050,4 +1083,4 @@ if(adminPass){
 }
 </script>
 </body>
-</html>  
+</html>
