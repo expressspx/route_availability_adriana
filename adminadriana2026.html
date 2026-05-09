@@ -609,6 +609,44 @@ input:focus,select:focus{
   }
 }
 
+
+.waiting-modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+
+.waiting-modal-head h2{
+  margin:0 0 6px;
+  color:#ffb199;
+}
+
+.waiting-modal-head p{
+  margin:0;
+  color:#cbd5e1;
+}
+
+.waiting-modal-tools{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+
+.waiting-time-badge{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(56,189,248,.10);
+  border:1px solid rgba(56,189,248,.70);
+  color:#7dd3fc;
+  font-weight:900;
+  font-size:12px;
+}
+
 </style>
 </head>
 
@@ -655,6 +693,7 @@ input:focus,select:focus{
       <button onclick="abrir('modalMotorista')">+ Novo motorista</button>
       <button class="btn-info" onclick="abrir('modalConsulta')">Consultar motorista</button>
       <button class="btn-ok" onclick="abrirGalpao()">Configurar galpão</button>
+      <button class="btn-info" onclick="abrirMotoristasGalpao()">Motoristas no galpão</button>
       <button class="btn-dark" onclick="sair()">Sair</button>
     </div>
 
@@ -687,24 +726,30 @@ input:focus,select:focus{
       <div id="listaRotas" class="route-list"></div>
     </div>
 
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <h2>Motoristas no galpão</h2>
-          <p>Acompanhe quem confirmou presença e está aguardando rota.</p>
-        </div>
-      </div>
+  </div>
+</div>
 
-      <div class="toolbar">
-        <button class="btn-dark" onclick="carregarWaiting()">Atualizar lista</button>
-        <button class="btn-info" onclick="selecionarWaitingVisiveis()">Selecionar visíveis</button>
-        <button class="btn-dark" onclick="desmarcarWaiting()">Desmarcar</button>
-        <button class="btn-danger" onclick="limparWaitingSelecionados()">Excluir selecionados</button>
-        <button class="btn-danger" onclick="limparWaitingHoje()">Limpar todos de hoje</button>
-      </div>
 
-      <div id="listaWaiting" class="waiting-list"></div>
+<div id="modalMotoristasGalpao" class="modal">
+  <div class="box large">
+    <button class="close" onclick="fechar('modalMotoristasGalpao')">×</button>
+
+    <div class="waiting-modal-head">
+      <div>
+        <h2>Motoristas no galpão</h2>
+        <p>Acompanhe quem confirmou presença. A ordem fica pelo horário de preenchimento, considerando segundos.</p>
+      </div>
     </div>
+
+    <div class="waiting-modal-tools">
+      <button class="btn-dark" onclick="carregarWaiting()">Atualizar lista</button>
+      <button class="btn-info" onclick="selecionarWaitingVisiveis()">Selecionar visíveis</button>
+      <button class="btn-dark" onclick="desmarcarWaiting()">Desmarcar</button>
+      <button class="btn-danger" onclick="limparWaitingSelecionados()">Excluir selecionados</button>
+      <button class="btn-danger" onclick="limparWaitingHoje()">Limpar todos de hoje</button>
+    </div>
+
+    <div id="listaWaiting" class="waiting-list"></div>
   </div>
 </div>
 
@@ -884,6 +929,11 @@ async function login(){
   iniciar();
 }
 
+function abrirMotoristasGalpao(){
+  abrir("modalMotoristasGalpao");
+  carregarWaiting();
+}
+
 function sair(){
   sessionStorage.removeItem("adminPass");
   location.reload();
@@ -915,7 +965,16 @@ async function carregarRotas(){
 }
 
 function fmtVeiculos(v){return Array.isArray(v)?v.join(", "):"-"}
-function fmtData(v){return v?new Date(v).toLocaleString("pt-BR"):"-"}
+function fmtData(v){
+  return v ? new Date(v).toLocaleString("pt-BR", {
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric",
+    hour:"2-digit",
+    minute:"2-digit",
+    second:"2-digit"
+  }) : "-";
+}
 
 function renderRotas(){
   const termo=(busca.value||"").toLowerCase();
@@ -1246,8 +1305,8 @@ async function carregarWaiting(){
   if(!adminPass)return;
   const {data,error}=await sb.rpc("admin_get_waiting",{p_password:adminPass});
   if(error){listaWaiting.innerHTML='<div class="notice">Erro ao carregar lista.</div>';return}
-  waiting=data||[];
-  listaWaiting.innerHTML=data.length?data.map(w=>`
+  waiting=(data||[]).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  listaWaiting.innerHTML=waiting.length?waiting.map(w=>`
     <div class="item">
       <input type="checkbox" class="waitingCheck item-check" value="${w.id}">
 
@@ -1259,7 +1318,7 @@ async function carregarWaiting(){
 
       <div class="route-details">
         <p><strong>Distância:</strong> ${Math.round(Number(w.distance_meters||0))}m</p>
-        <p><strong>Horário:</strong> ${fmtData(w.created_at)}</p>
+        <p><strong>Horário:</strong> <span class="waiting-time-badge">${fmtData(w.created_at)}</span></p>
         <p><strong>Status:</strong> ${w.status || "aguardando"}</p>
       </div>
 
