@@ -1473,6 +1473,27 @@ window.baixarModeloRotas = baixarModeloRotas;
 window.importarMotoristasArquivo = importarMotoristasArquivo;
 window.importarRotasArquivo = importarRotasArquivo;
 
+
+function normalizarTexto(v){
+  return String(v || "").trim();
+}
+
+function normalizarVeiculo(v){
+  return String(v || "").trim().toUpperCase();
+}
+
+function normalizarTurno(v){
+  return String(v || "").trim().toUpperCase();
+}
+
+function validarVeiculo(v){
+  return ["FIORINO","PASSEIO","MOTO","VAN"].includes(String(v || "").toUpperCase());
+}
+
+function validarTurno(v){
+  return ["AM","SD","PM2"].includes(String(v || "").toUpperCase());
+}
+
 </script>
 </body>
 </html>
