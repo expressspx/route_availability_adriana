@@ -686,6 +686,7 @@ tr:first-child .pos{background:var(--accent-soft);color:var(--accent-text)}
     <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
     <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
     <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol>
     <symbol id="i-map" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></symbol>
   </defs>
 </svg>
@@ -985,6 +986,49 @@ tr:first-child .pos{background:var(--accent-soft);color:var(--accent-text)}
     <div class="dialog-foot">
       <button class="btn btn-secondary" onclick="fechar('modalRota')">Cancelar</button>
       <button class="btn btn-primary" onclick="busy(this,criarRota)"><svg class="i i-sm"><use href="#i-megaphone"/></svg>Divulgar rota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Editar rota ============ -->
+<div id="modalEditarRota" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloEditarRota">
+  <div class="dialog">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-edit"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloEditarRota">Editar rota <span class="mono" id="editRotaTitulo"></span></h2>
+        <p class="dialog-sub">Altere os veículos permitidos sem precisar excluir e divulgar de novo.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalEditarRota')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <span class="field-label">Veículos permitidos</span>
+        <div class="option-grid">
+          <label class="option"><input type="checkbox" class="editVeiculo" value="FIORINO"><span>FIORINO</span></label>
+          <label class="option"><input type="checkbox" class="editVeiculo" value="PASSEIO"><span>PASSEIO</span></label>
+          <label class="option"><input type="checkbox" class="editVeiculo" value="MOTO"><span>MOTO</span></label>
+          <label class="option"><input type="checkbox" class="editVeiculo" value="VAN"><span>VAN</span></label>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Rota</span>
+          <input id="editRouteName" class="input mono">
+        </label>
+        <label class="field">
+          <span class="field-label">Região</span>
+          <input id="editRegion" class="input">
+        </label>
+      </div>
+      <div class="notice">
+        <svg class="i"><use href="#i-info"/></svg>
+        <div>Só dá para editar rotas <strong>disponíveis</strong>. Os turnos liberados continuam os mesmos (<strong id="editTurnosInfo">—</strong>). A rota continua disponível para os motoristas.</div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" onclick="fechar('modalEditarRota')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarEdicaoRota" onclick="busy(this,salvarEdicaoRota)"><svg class="i i-sm"><use href="#i-check"/></svg>Salvar alterações</button>
     </div>
   </div>
 </div>
@@ -1537,7 +1581,7 @@ function linhaRota(r){
       <td data-label="Repassada em">${quando}</td>
       <td class="col-actions">
         <div class="row-actions">
-          ${disponivel ? "" : `<button class="btn btn-secondary btn-sm" onclick="reabrirRota(${Number(r.id)})" title="Deixar a rota disponível de novo">${ico("rotate","i-sm")}Reabrir</button>`}
+          ${disponivel ? `<button class="btn btn-secondary btn-sm" onclick="abrirEditarRota(${Number(r.id)})" title="Editar veículos da rota">${ico("edit","i-sm")}Editar</button>` : `<button class="btn btn-secondary btn-sm" onclick="reabrirRota(${Number(r.id)})" title="Deixar a rota disponível de novo">${ico("rotate","i-sm")}Reabrir</button>`}
           <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="excluirRota(${Number(r.id)})" title="Excluir rota" aria-label="Excluir rota ${esc(r.route_name)}">${ico("trash","i-sm")}</button>
         </div>
       </td>
@@ -1664,6 +1708,82 @@ function reabrirRota(id){
       carregarRotas();
     }catch(e){ toast(e.message || "Erro ao reabrir.", "Erro", "!"); }
   }, "?", "Reabrir rota");
+}
+
+/* Editar rota disponível (sem mudar o banco: publica a versão nova e remove a antiga) */
+let rotaEditando = null;
+const mesmoConjunto = (a, b) => { const x = arr(a).slice().sort().join(","), y = arr(b).slice().sort().join(","); return x === y; };
+
+function abrirEditarRota(id){
+  const r = rotas.find(x => Number(x.id) === Number(id));
+  if(!r) return;
+  if(r.status !== "disponivel") return toast("Esta rota já foi repassada. Reabra a rota antes de editar.", "Não dá para editar", "!");
+  rotaEditando = r;
+  $("editRotaTitulo").innerText = r.route_name || "";
+  $("editRouteName").value = r.route_name || "";
+  $("editRegion").value = r.region || "";
+  const v = arr(r.allowed_vehicles);
+  document.querySelectorAll(".editVeiculo").forEach(i => { i.checked = v.includes(i.value); });
+  $("editTurnosInfo").innerText = (arr(r.allowed_shifts).length ? r.allowed_shifts : turnosSelecionadosRota()).join(", ") || "nenhum";
+  abrir("modalEditarRota");
+  setTimeout(() => { const c = document.querySelector(".editVeiculo"); c && c.focus(); }, 60);
+}
+
+async function salvarEdicaoRota(){
+  const r = rotaEditando;
+  if(!r) return;
+  const nome = $("editRouteName").value.trim();
+  const reg = $("editRegion").value.trim();
+  const veic = Array.from(document.querySelectorAll(".editVeiculo:checked")).map(i => i.value);
+  const turnos = arr(r.allowed_shifts).length ? r.allowed_shifts : turnosSelecionadosRota();
+
+  if(!nome || !reg) return toast("Preencha o nome da rota e a região.", "Faltam dados", "!");
+  if(!veic.length) return toast("Marque pelo menos um tipo de veículo.", "Faltam dados", "!");
+  if(!turnos.length) return toast("Libere pelo menos um turno no filtro geral.", "Faltam dados", "!");
+
+  if(nome === r.route_name && reg === (r.region || "") && mesmoConjunto(veic, r.allowed_vehicles)){
+    fechar("modalEditarRota");
+    return toast("Nenhuma alteração foi feita.", "Sem alterações", "✓");
+  }
+
+  // 1) Confere se a rota ainda está disponível
+  let lista;
+  try{ lista = await rpc("admin_get_routes", {p_password: adminPass}) || []; }
+  catch(e){ return toast("Não foi possível conferir a rota. Tente de novo.", "Erro", "!"); }
+  const atual = lista.find(x => Number(x.id) === Number(r.id));
+  if(!atual || atual.status !== "disponivel"){
+    fechar("modalEditarRota"); carregarRotas();
+    return toast(atual ? "Um motorista acabou de pegar esta rota. Nada foi alterado." : "Esta rota não existe mais.", "Edição cancelada", "!");
+  }
+
+  // 2) Publica a versão nova (se falhar, a antiga continua intacta)
+  try{
+    await rpc("admin_create_route", {p_password: adminPass, p_route_name: nome, p_region: reg, p_allowed_vehicles: veic, p_allowed_shifts: turnos});
+  }catch(e){ return toast(e.message || "Erro ao salvar a edição.", "Erro", "!"); }
+
+  // 3) Remove a versão antiga, se ninguém pegou nesse meio-tempo
+  try{
+    const lista2 = await rpc("admin_get_routes", {p_password: adminPass}) || [];
+    const antiga = lista2.find(x => Number(x.id) === Number(r.id));
+    if(antiga && antiga.status !== "disponivel"){
+      const copia = lista2
+        .filter(x => x.status === "disponivel" && Number(x.id) !== Number(r.id) && x.route_name === nome && mesmoConjunto(x.allowed_vehicles, veic))
+        .sort((a, b) => Number(b.id) - Number(a.id))[0];
+      if(copia) await rpc("admin_delete_route", {p_password: adminPass, p_route_id: copia.id});
+      fechar("modalEditarRota"); carregarRotas();
+      return toast("Um motorista pegou a rota enquanto você editava. A rota original foi mantida com ele.", "Edição cancelada", "!");
+    }
+    if(antiga) await rpc("admin_delete_route", {p_password: adminPass, p_route_id: r.id});
+  }catch(e){
+    fechar("modalEditarRota"); carregarRotas();
+    return toast("A versão nova foi publicada, mas a antiga não pôde ser removida. Exclua a rota antiga manualmente.", "Atenção", "!");
+  }
+
+  selRotas.delete(String(r.id));
+  rotaEditando = null;
+  fechar("modalEditarRota");
+  toast(`${nome} agora aceita: ${veic.join(", ")}.`, "Rota atualizada", "✓");
+  carregarRotas();
 }
 
 async function excluirRotasEmLote(ids){
