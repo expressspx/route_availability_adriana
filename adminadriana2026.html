@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>Admin · Repasse de Rotas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0e13">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("adminTheme")||"dark"}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   1. Tokens
+   ========================================================= */
+:root{
+  color-scheme:dark;
+  --bg:#0b0e13;
+  --surface:#11151c;
+  --surface-2:#151a22;
+  --surface-3:#1b212b;
+  --border:rgba(255,255,255,.07);
+  --border-2:rgba(255,255,255,.12);
+  --row-hover:rgba(255,255,255,.025);
+  --text:#edf0f4;
+  --text-2:#a3adba;
+  --text-3:#6c7787;
+
+  --accent:#ee4d2d;
+  --accent-2:#ff6a45;
+  --accent-soft:rgba(238,77,45,.12);
+  --accent-line:rgba(238,77,45,.38);
+  --accent-text:#ff8a6b;
+
+  --ok:#22c55e;      --ok-soft:rgba(34,197,94,.12);     --ok-text:#4ade80;
+  --warn:#f59e0b;    --warn-soft:rgba(245,158,11,.13);  --warn-text:#fbbf24;
+  --danger:#e5484d;  --danger-soft:rgba(229,72,77,.12); --danger-text:#ff7b7f;
+  --info-soft:rgba(56,189,248,.10); --info-text:#7dd3fc;
+
+  --side-bg:#0e1117;
+  --side-border:rgba(255,255,255,.06);
+  --side-text:#c9d1dc;
+  --side-muted:#6c7787;
+  --side-hover:rgba(255,255,255,.05);
+
+  --overlay:rgba(4,6,10,.72);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.35);
+  --shadow-lg:0 30px 80px rgba(0,0,0,.55);
+
+  --r-sm:7px; --r:10px; --r-lg:14px; --r-xl:18px;
+  --sidebar:260px;
+  --font:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f3f4f6;
+  --surface:#ffffff;
+  --surface-2:#f8f9fb;
+  --surface-3:#eef0f3;
+  --border:#e5e7eb;
+  --border-2:#d6dae1;
+  --row-hover:#fafbfc;
+  --text:#101828;
+  --text-2:#475467;
+  --text-3:#8a94a6;
+  --accent-soft:rgba(238,77,45,.08);
+  --accent-text:#cf3d1d;
+  --ok-soft:rgba(22,163,74,.10);   --ok-text:#15803d;
+  --warn-soft:rgba(217,119,6,.11); --warn-text:#b45309;
+  --danger-soft:rgba(220,38,38,.08); --danger-text:#c0262d;
+  --info-soft:rgba(2,132,199,.08); --info-text:#0369a1;
+  --overlay:rgba(16,24,40,.45);
+  --shadow-sm:0 1px 2px rgba(16,24,40,.06);
+  --shadow-lg:0 30px 80px rgba(16,24,40,.22);
+}
+
+/* =========================================================
+   2. Base
+   ========================================================= */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:var(--font);
+  font-size:14px;
+  line-height:1.5;
+  color:var(--text);
+  background:var(--bg);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+body.modal-open{overflow:hidden}
+h1,h2,h3,p{margin:0}
+.mono{font-family:var(--mono)}
+.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.i-sm{width:14px;height:14px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+.locked .app{display:none}
+
+/* =========================================================
+   3. Controls
+   ========================================================= */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:40px;padding:0 15px;
+  border-radius:var(--r);
+  border:1px solid transparent;
+  font:700 13.5px/1 var(--font);
+  letter-spacing:.005em;
+  color:var(--text);
+  background:transparent;
+  cursor:pointer;
+  white-space:nowrap;
+  position:relative;
+  transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s;
+}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 6px 18px rgba(238,77,45,.22)}
+.btn-primary:hover:not([disabled]){background:var(--accent-2)}
+.btn-secondary{background:var(--surface-2);border-color:var(--border-2)}
+.btn-secondary:hover:not([disabled]){background:var(--surface-3)}
+.btn-ghost{color:var(--text-2)}
+.btn-ghost:hover:not([disabled]){background:var(--surface-3);color:var(--text)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover:not([disabled]){filter:brightness(1.08)}
+.btn-danger-ghost{color:var(--danger-text)}
+.btn-danger-ghost:hover:not([disabled]){background:var(--danger-soft)}
+.btn-success{background:#16a34a;color:#fff}
+.btn-success:hover:not([disabled]){background:#18b450}
+.btn-warn{background:#d97706;color:#fff}
+.btn-warn:hover:not([disabled]){background:#e8850d}
+.btn-sm{height:32px;padding:0 11px;font-size:12.5px;border-radius:var(--r-sm)}
+.btn-icon{width:36px;height:36px;padding:0}
+.btn-icon.btn-sm{width:32px;height:32px}
+.btn-block{width:100%}
+.btn.is-busy{color:transparent!important;pointer-events:none}
+.btn.is-busy::after{
+  content:"";position:absolute;width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
+  animation:spin .7s linear infinite;
+}
+.btn-secondary.is-busy::after,.btn-ghost.is-busy::after{border-color:var(--border-2);border-top-color:var(--text)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.field{display:grid;gap:6px}
+.field-label{font-size:12.5px;font-weight:700;color:var(--text-2)}
+.field-hint{font-size:12px;color:var(--text-3)}
+.input{
+  width:100%;height:42px;padding:0 13px;
+  border-radius:var(--r);
+  border:1px solid var(--border-2);
+  background:var(--surface-2);
+  color:var(--text);
+  font:500 14px var(--font);
+  transition:border-color .15s,box-shadow .15s,background .15s;
+}
+select.input{appearance:none;padding-right:36px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238a94a6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+.input::placeholder{color:var(--text-3)}
+.input:hover{border-color:color-mix(in srgb,var(--border-2) 60%,var(--text-3))}
+.input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.form-grid .span-2{grid-column:1/-1}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;margin:0;cursor:pointer}
+
+/* Chips & badges */
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chips+.chips{margin-top:6px}
+.chip{
+  display:inline-flex;align-items:center;height:22px;padding:0 8px;
+  border-radius:6px;border:1px solid var(--border-2);
+  background:var(--surface-2);color:var(--text-2);
+  font:600 11px/1 var(--mono);letter-spacing:.02em;
+}
+.chip-shift{border-color:transparent;background:var(--info-soft);color:var(--info-text)}
+.chip-empty{border-style:dashed;color:var(--text-3)}
+
+.status{
+  display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 11px 0 9px;
+  border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;
+}
+.status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.status-ok{background:var(--ok-soft);color:var(--ok-text)}
+.status-ok::before{animation:pulse 2s var(--ease) infinite}
+.status-taken{background:var(--warn-soft);color:var(--warn-text)}
+.status-info{background:var(--info-soft);color:var(--info-text)}
+.status-danger{background:var(--danger-soft);color:var(--danger-text)}
+.status-neutral{background:var(--surface-3);color:var(--text-2)}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 55%,transparent)}
+  70%{box-shadow:0 0 0 6px transparent}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+.count{
+  display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;
+  border-radius:999px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800;
+}
+
+.notice{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:12px 14px;border-radius:var(--r);
+  background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text-2);font-size:13px;
+}
+.notice .i{color:var(--text-3);margin-top:1px}
+.notice strong{color:var(--text)}
+.notice-accent{background:var(--accent-soft);border-color:var(--accent-line)}
+.notice-accent .i{color:var(--accent-text)}
+.result{white-space:pre-line;font-family:var(--mono);font-size:12.5px;max-height:220px;overflow:auto}
+
+/* =========================================================
+   4. Shell: sidebar + main
+   ========================================================= */
+.app{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
+
+.sidebar{
+  position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;
+  background:var(--side-bg);
+  border-right:1px solid var(--side-border);
+  color:var(--side-text);
+  padding:18px 14px;
+  z-index:40;
+}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 8px 20px}
+.brand-mark{
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(135deg,#ff6a45,#ee4d2d 55%,#c73a1f);
+  color:#fff;box-shadow:0 8px 20px rgba(238,77,45,.35),inset 0 1px 0 rgba(255,255,255,.25);
+}
+.brand-mark .i{width:20px;height:20px}
+.brand-name{font-weight:800;font-size:15px;color:#fff;line-height:1.2}
+.brand-sub{font-size:12px;color:var(--side-muted)}
+
+.nav{display:grid;gap:2px;overflow:auto;padding-bottom:12px}
+.nav-label{
+  padding:16px 10px 6px;font-size:10.5px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--side-muted);
+}
+.nav-item{
+  display:flex;align-items:center;gap:11px;width:100%;
+  height:38px;padding:0 10px;border-radius:9px;border:0;
+  background:transparent;color:var(--side-text);
+  font:600 13.5px var(--font);text-align:left;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.nav-item .i{color:var(--side-muted);transition:color .15s}
+.nav-item:hover{background:var(--side-hover);color:#fff}
+.nav-item:hover .i{color:#fff}
+.nav-item.active{background:rgba(238,77,45,.14);color:#fff;box-shadow:inset 2px 0 0 var(--accent)}
+.nav-item.active .i{color:var(--accent-2)}
+.nav-item .count{margin-left:auto}
+
+.side-foot{margin-top:auto;display:grid;gap:4px;padding-top:12px;border-top:1px solid var(--side-border)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;gap:14px;
+  height:60px;padding:0 28px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3);font-weight:600}
+.crumbs b{color:var(--text);font-weight:700}
+.topbar-end{margin-left:auto;display:flex;align-items:center;gap:10px}
+.live{
+  display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;
+  border-radius:999px;border:1px solid var(--border);background:var(--surface);
+  font-size:12.5px;color:var(--text-2);font-weight:600;
+}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--text-3)}
+.live.on .live-dot{background:var(--ok);color:var(--ok);animation:pulse 2s var(--ease) infinite}
+.menu-btn{display:none}
+
+.content{width:100%;max-width:1440px;margin:0 auto;padding:28px;display:grid;gap:22px}
+
+/* Page head */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-text)}
+.page-title{font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+.page-sub{color:var(--text-2);margin-top:6px;font-size:14.5px}
+.page-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.head-banner{height:64px;width:auto;max-width:260px;border-radius:12px;border:1px solid var(--border-2);object-fit:cover}
+
+/* KPIs */
+.kpis{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  box-shadow:var(--shadow-sm);overflow:hidden;
+}
+.kpi{
+  display:grid;gap:4px;align-content:start;padding:18px 22px;
+  border:0;border-right:1px solid var(--border);background:transparent;
+  text-align:left;color:inherit;font:inherit;
+}
+.kpi:last-child{border-right:0}
+.kpi-label{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.kpi-value{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi-foot{font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:6px}
+.kpi-bar{height:4px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-top:6px}
+.kpi-bar span{display:block;height:100%;width:0;background:var(--warn);border-radius:99px;transition:width .5s var(--ease)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.accent{background:var(--accent)}
+.kpi-link{cursor:pointer;transition:background .15s}
+.kpi-link:hover{background:var(--surface-2)}
+.kpi-link:hover .kpi-foot{color:var(--accent-text)}
+
+/* Panel */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+.panel-head{
+  display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:18px 22px;border-bottom:1px solid var(--border);
+}
+.panel-title{font-size:16px;font-weight:800}
+.panel-sub{color:var(--text-2);font-size:13px;margin-top:2px}
+
+.shift-control{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.shift-copy{display:grid;text-align:right}
+.shift-copy span{font-size:12.5px;font-weight:800}
+.shift-copy small{font-size:12px;color:var(--text-3)}
+.shift-group{display:inline-flex;padding:3px;gap:3px;border-radius:11px;background:var(--surface-2);border:1px solid var(--border)}
+.shift-toggle{position:relative;cursor:pointer}
+.shift-toggle input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.shift-toggle span{
+  display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:8px;
+  font:700 12.5px var(--mono);color:var(--text-3);transition:background .15s,color .15s,box-shadow .15s;
+}
+.shift-toggle span::before{
+  content:"";width:14px;height:14px;border-radius:4px;border:1.5px solid currentColor;opacity:.7;
+  transition:.15s;background-position:center;background-repeat:no-repeat;background-size:10px;
+}
+.shift-toggle input:checked+span{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm),0 0 0 1px var(--border-2)}
+.shift-toggle input:checked+span::before{
+  opacity:1;border-color:var(--accent);background-color:var(--accent);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.shift-toggle input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
+.shift-toggle:hover input:not(:checked)+span{color:var(--text-2)}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--border)}
+.search{position:relative;flex:1 1 320px;max-width:460px}
+.search .i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none}
+.search .input{padding-left:38px;padding-right:40px;height:38px}
+.search kbd{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font:600 11px var(--mono);color:var(--text-3);border:1px solid var(--border-2);
+  border-radius:5px;padding:1px 6px;background:var(--surface);
+}
+.segmented{display:inline-flex;padding:3px;gap:2px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
+.segmented button{
+  display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border:0;border-radius:7px;
+  background:transparent;color:var(--text-2);font:700 12.5px var(--font);cursor:pointer;transition:.15s;
+}
+.segmented button span{font-size:11.5px;color:var(--text-3);font-weight:700}
+.segmented button:hover{color:var(--text)}
+.segmented button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm),0 0 0 1px var(--border-2)}
+.segmented button.active span{color:var(--accent-text)}
+.toolbar-end{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+.bulkbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 22px;background:var(--accent-soft);border-bottom:1px solid var(--accent-line);
+  animation:slideDown .2s var(--ease);
+}
+.bulkbar strong{font-size:13px}
+.bulkbar .spacer{flex:1}
+@keyframes slideDown{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* Data table */
+.table-wrap{overflow-x:auto}
+.data{width:100%;border-collapse:separate;border-spacing:0;min-width:980px}
+.data th{
+  position:sticky;top:0;z-index:1;
+  text-align:left;padding:11px 14px;
+  font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);
+  background:var(--surface-2);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.data td{padding:14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data tbody tr{transition:background .12s}
+.data tbody tr:hover td{background:var(--row-hover)}
+.data tbody tr.is-selected td{background:var(--accent-soft)}
+.data tbody tr:last-child td{border-bottom:0}
+.data .col-check{width:44px;padding-left:22px;padding-right:4px}
+.data .col-actions{width:1%;white-space:nowrap;text-align:right;padding-right:22px}
+.data th:first-child{padding-left:22px}
+.data th:last-child{padding-right:22px;text-align:right}
+.route-name{font-size:14.5px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.cell-main{font-weight:700;color:var(--text)}
+.cell-sub{display:flex;align-items:center;gap:5px;color:var(--text-3);font-size:12.5px;margin-top:3px}
+.cell-sub .i{width:13px;height:13px}
+.muted-dash{color:var(--text-3);font-size:13px}
+.row-actions{display:inline-flex;gap:6px;align-items:center;justify-content:flex-end}
+.pos{
+  display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;
+  background:var(--surface-3);font:600 12.5px var(--mono);color:var(--text-2);
+}
+tr:first-child .pos{background:var(--accent-soft);color:var(--accent-text)}
+
+.panel-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 22px;border-top:1px solid var(--border);color:var(--text-3);font-size:12.5px}
+
+.empty{display:grid;justify-items:center;text-align:center;gap:8px;padding:56px 20px}
+.empty-ico{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--surface-3);color:var(--text-3);margin-bottom:6px}
+.empty-ico .i{width:24px;height:24px}
+.empty h3{font-size:15px;font-weight:800}
+.empty p{color:var(--text-2);font-size:13px;max-width:380px}
+.empty .btn{margin-top:8px}
+
+.skel{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--surface-3) 0%,var(--surface-2) 50%,var(--surface-3) 100%);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+/* =========================================================
+   5. Modals
+   ========================================================= */
+.modal{
+  position:fixed;inset:0;z-index:60;display:none;place-items:center;
+  padding:20px;background:var(--overlay);backdrop-filter:blur(4px);
+}
+.modal.show{display:grid;animation:fadeIn .18s ease}
+#modalMsg,#modalConfirmacao{z-index:90}
+.dialog{
+  width:100%;max-width:560px;max-height:calc(100vh - 40px);
+  display:flex;flex-direction:column;
+  background:var(--surface);border:1px solid var(--border-2);border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lg);
+  animation:pop .24s var(--ease);
+}
+.dialog-md{max-width:720px}
+.dialog-lg{max-width:1120px}
+.dialog-sm{max-width:420px}
+.dialog-head{display:flex;gap:14px;align-items:flex-start;padding:20px 22px 18px;border-bottom:1px solid var(--border)}
+.dialog-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--accent-soft);color:var(--accent-text)}
+.dialog-title{font-size:18px;font-weight:800;letter-spacing:-.01em}
+.dialog-sub{color:var(--text-2);font-size:13.5px;margin-top:3px}
+.dialog-head .close{margin-left:auto;margin-top:-4px;margin-right:-6px}
+.dialog-body{padding:20px 22px;overflow:auto;display:grid;gap:18px;align-content:start}
+.dialog-foot{
+  display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 22px;border-top:1px solid var(--border);background:var(--surface-2);
+  border-radius:0 0 var(--r-xl) var(--r-xl);
+}
+.dialog-foot .left{margin-right:auto}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+
+/* Message / confirm */
+.alert-dialog{text-align:center}
+.alert-dialog .dialog-body{padding:28px 26px 22px;justify-items:center;gap:10px}
+.alert-ico{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin-bottom:6px;background:var(--warn-soft);color:var(--warn-text)}
+.alert-ico .i{width:24px;height:24px}
+.alert-ico[data-tone="danger"]{background:var(--danger-soft);color:var(--danger-text)}
+.alert-ico[data-tone="info"]{background:var(--info-soft);color:var(--info-text)}
+.alert-ico[data-tone="ok"]{background:var(--ok-soft);color:var(--ok-text)}
+.alert-dialog h2{font-size:18px;font-weight:800}
+.alert-dialog p{color:var(--text-2);font-size:14px;line-height:1.55;white-space:pre-line}
+.alert-dialog .dialog-foot{justify-content:stretch}
+.alert-dialog .dialog-foot .btn{flex:1}
+
+/* Section inside dialogs */
+.section-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+
+.option-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.option{position:relative;cursor:pointer}
+.option input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;cursor:pointer}
+.option span{
+  display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:var(--r);
+  border:1px solid var(--border-2);background:var(--surface-2);
+  font:700 12.5px var(--mono);color:var(--text-2);transition:.15s;
+}
+.option input:checked+span{border-color:var(--accent);background:var(--accent-soft);color:var(--text);box-shadow:0 0 0 1px var(--accent) inset}
+.option input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.option:hover span{border-color:color-mix(in srgb,var(--border-2) 50%,var(--text-3))}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:0 22px;border-bottom:1px solid var(--border)}
+.tab{
+  height:44px;padding:0 4px;margin-right:18px;border:0;background:none;cursor:pointer;
+  font:700 13.5px var(--font);color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+
+/* Steps & dropzone */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.step{padding:14px;border-radius:var(--r);background:var(--surface-2);border:1px solid var(--border)}
+.step-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);font:700 12px var(--mono);margin-bottom:8px}
+.step b{display:block;font-size:13.5px}
+.step p{font-size:12.5px;color:var(--text-2);margin-top:3px}
+.code-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.code-chips code{font:600 11.5px var(--mono);padding:3px 7px;border-radius:5px;background:var(--surface-3);color:var(--text)}
+
+.dropzone{
+  position:relative;display:flex;align-items:center;gap:14px;
+  padding:18px;border-radius:var(--r-lg);border:1.5px dashed var(--border-2);
+  background:var(--surface-2);cursor:pointer;transition:.15s;
+}
+.dropzone:hover,.dropzone.has-file{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.dropzone-ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border-2);color:var(--accent-text);flex:none}
+.dropzone b{display:block;font-size:13.5px}
+.dropzone small{color:var(--text-3);font-size:12.5px}
+
+.example{width:100%;border-collapse:collapse;font-size:12.5px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.example th,.example td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.example th{font:600 11px var(--mono);color:var(--text-3);background:var(--surface-2)}
+.example td{font-family:var(--mono);color:var(--text-2)}
+.example tr:last-child td{border-bottom:0}
+
+.import-progress{display:none;padding:14px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface-2)}
+.import-progress-title{display:flex;justify-content:space-between;font-weight:800;font-size:13px;margin-bottom:10px}
+.import-progress-title span:last-child{font-family:var(--mono);color:var(--accent-text)}
+.import-progress-bar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.import-progress-fill{width:0;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .18s ease}
+.import-progress-status{margin-top:8px;color:var(--text-3);font-size:12.5px}
+
+/* Driver profile */
+.search-row{display:flex;gap:10px}
+.search-row .input{flex:1}
+.profile{display:flex;gap:14px;align-items:center;padding:16px;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--surface-2)}
+.avatar{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex:none;background:linear-gradient(135deg,#ff6a45,#c73a1f);color:#fff;font-weight:800;font-size:16px}
+.profile-name{font-size:16px;font-weight:800}
+.profile-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.inline-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Login */
+.login-screen{
+  position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:24px;
+  background:
+    radial-gradient(900px 500px at 15% -10%,rgba(238,77,45,.22),transparent 60%),
+    radial-gradient(700px 400px at 110% 110%,rgba(238,77,45,.10),transparent 60%),
+    var(--bg);
+}
+.login-screen::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse at center,#000 10%,transparent 70%);
+}
+.login-screen.show{display:grid}
+.login-card{
+  position:relative;width:100%;max-width:400px;padding:32px;
+  background:var(--surface);border:1px solid var(--border-2);border-radius:20px;box-shadow:var(--shadow-lg);
+  animation:pop .35s var(--ease);
+}
+.login-card .brand{padding:0 0 26px}
+.login-card .brand-name{color:var(--text)}
+.login-card .brand-sub{color:var(--text-3)}
+.login-card h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+.login-card > p{color:var(--text-2);margin:6px 0 22px}
+.pass-wrap{position:relative}
+.pass-wrap .input{padding-right:46px;height:46px}
+.pass-wrap .btn{position:absolute;right:5px;top:5px}
+.login-error{display:flex;align-items:center;gap:8px;color:var(--danger-text);font-size:13px;font-weight:600;min-height:20px;margin:8px 0 6px}
+.login-foot{display:flex;align-items:center;gap:8px;margin-top:20px;padding-top:18px;border-top:1px solid var(--border);color:var(--text-3);font-size:12.5px}
+
+/* Toasts */
+.toast-stack{position:fixed;right:22px;bottom:22px;z-index:120;display:grid;gap:10px;width:min(380px,calc(100vw - 32px))}
+.toast{
+  display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:var(--r-lg);
+  background:var(--surface);border:1px solid var(--border-2);box-shadow:var(--shadow-lg);
+  animation:toastIn .28s var(--ease);
+}
+.toast.out{animation:toastOut .2s ease forwards}
+.toast-ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--ok-soft);color:var(--ok-text)}
+.toast-ico .i{width:16px;height:16px}
+.toast b{display:block;font-size:13.5px}
+.toast span{display:block;color:var(--text-2);font-size:13px;margin-top:1px}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(16px)}}
+
+.scrim{display:none}
+
+/* =========================================================
+   6. Responsive
+   ========================================================= */
+@media(max-width:1180px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi:nth-child(2){border-right:0}
+  .kpi:nth-child(-n+2){border-bottom:1px solid var(--border)}
+  .shift-copy{text-align:left}
+}
+@media(max-width:1024px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar);transform:translateX(-100%);transition:transform .25s var(--ease)}
+  .sidebar.open{transform:none;box-shadow:var(--shadow-lg)}
+  .scrim{position:fixed;inset:0;background:var(--overlay);z-index:35}
+  .scrim.show{display:block}
+  .menu-btn{display:inline-flex}
+  .topbar{padding:0 16px}
+  .content{padding:20px 16px}
+  .head-banner{display:none}
+}
+@media(max-width:860px){
+  .live-text{display:none}
+  .crumbs span,.crumbs-root{display:none}
+  .page-title{font-size:24px}
+  .page-actions{width:100%}
+  .page-actions .btn{flex:1}
+  .panel-head,.toolbar,.bulkbar,.panel-foot{padding-left:16px;padding-right:16px}
+  .toolbar-end{margin-left:0}
+  .search{max-width:none;flex-basis:100%}
+  .search kbd{display:none}
+  .form-grid,.steps{grid-template-columns:1fr}
+  .option-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+  /* table -> stacked rows */
+  .data{min-width:0}
+  .data thead{display:none}
+  .data,.data tbody,.data tr,.data td{display:block;width:100%}
+  .data tbody tr{position:relative;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .data tbody tr:last-child{border-bottom:0}
+  .data td{border:0;padding:5px 0;display:grid;grid-template-columns:112px minmax(0,1fr);column-gap:10px;row-gap:3px;align-items:start}
+  .data td > *{grid-column:2;justify-self:start;max-width:100%}
+  .data td .cell-sub{margin-top:0}
+  .data tbody tr:hover td,.data tbody tr.is-selected td{background:transparent}
+  .data tbody tr.is-selected{background:var(--accent-soft)}
+  .data td::before{grid-column:1;grid-row:1 / span 3;content:attr(data-label);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);padding-top:3px}
+  .data td.col-check{position:absolute;right:14px;top:16px;width:auto;padding:0;display:block}
+  .data td.col-check::before,.data td.col-actions::before,.data td.no-label::before{content:none}
+  .data td.no-label{display:block}
+  .data td.col-actions{display:block;width:100%;text-align:left;padding:10px 0 0}
+  .data td.col-actions .row-actions{justify-content:flex-start}
+  .data td[colspan]{display:block}
+  .data td[colspan]::before{content:none}
+}
+@media(max-width:560px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi{padding:14px 16px}
+  .kpi-value{font-size:24px}
+  .dialog-head,.dialog-body,.dialog-foot{padding-left:16px;padding-right:16px}
+  .modal{padding:10px;align-items:end}
+  .dialog{max-height:calc(100vh - 20px)}
+  .search-row{flex-direction:column}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+
+<body class="locked">
+
+<!-- Ícones -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></symbol>
+    <symbol id="i-user-search" viewBox="0 0 24 24"><circle cx="10" cy="7" r="4"/><path d="M10.3 15H7a4 4 0 0 0-4 4v2"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-warehouse" viewBox="0 0 24 24"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+    <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></symbol>
+    <symbol id="i-sheet" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></symbol>
+  </defs>
+</svg>
+
+<div id="toast" class="toast-stack" aria-live="polite"></div>
+
+<!-- ============ Mensagem ============ -->
+<div id="modalMsg" class="modal" role="dialog" aria-modal="true" aria-labelledby="msgTitulo">
+  <div class="dialog dialog-sm alert-dialog">
+    <div class="dialog-body">
+      <div class="alert-ico" id="msgIcon"><svg class="i"><use href="#i-alert"/></svg></div>
+      <h2 id="msgTitulo">Aviso</h2>
+      <p id="msgTexto">Mensagem</p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-primary" onclick="fechar('modalMsg')">Entendi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Confirmação ============ -->
+<div id="modalConfirmacao" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitulo">
+  <div class="dialog dialog-sm alert-dialog">
+    <div class="dialog-body">
+      <div class="alert-ico" id="confirmIcon" data-tone="danger"><svg class="i"><use href="#i-alert"/></svg></div>
+      <h2 id="confirmTitulo">Confirmar ação</h2>
+      <p id="confirmTexto">Tem certeza?</p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" autofocus onclick="cancelarConfirmacao()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Login ============ -->
+<div id="modalLogin" class="login-screen show">
+  <form class="login-card" onsubmit="event.preventDefault();busy(document.getElementById('btnLogin'),()=>login())">
+    <div class="brand">
+      <div class="brand-mark"><svg class="i"><use href="#i-route"/></svg></div>
+      <div>
+        <div class="brand-name">Repasse de Rotas</div>
+        <div class="brand-sub">Painel administrativo</div>
+      </div>
+    </div>
+    <h1>Acesso administrativo</h1>
+    <p>Entre com a senha do admin para gerenciar rotas, motoristas e o galpão.</p>
+    <label class="field">
+      <span class="field-label">Senha</span>
+      <div class="pass-wrap">
+        <input id="senha" class="input" type="password" placeholder="Digite a senha" autocomplete="current-password" autofocus>
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" onclick="toggleSenha()" aria-label="Mostrar senha"><svg class="i i-sm"><use href="#i-eye"/></svg></button>
+      </div>
+    </label>
+    <div class="login-error" id="loginErro" role="alert"></div>
+    <button id="btnLogin" type="submit" class="btn btn-primary btn-block" style="height:46px">Entrar no painel</button>
+    <div class="login-foot"><svg class="i i-sm"><use href="#i-lock"/></svg>Acesso restrito à equipe de operação.</div>
+  </form>
+</div>
+
+<!-- ============ App ============ -->
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+    <div class="brand">
+      <div class="brand-mark"><svg class="i"><use href="#i-route"/></svg></div>
+      <div>
+        <div class="brand-name">Repasse de Rotas</div>
+        <div class="brand-sub">Painel administrativo</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-label">Operação</div>
+      <button class="nav-item active" onclick="irParaRotas()"><svg class="i"><use href="#i-list"/></svg>Rotas publicadas</button>
+      <button class="nav-item" onclick="navAcao(abrirMotoristasGalpao)"><svg class="i"><use href="#i-users"/></svg>Motoristas no galpão <span id="qtdWaitingBtn" class="count">0</span></button>
+
+      <div class="nav-label">Rotas</div>
+      <button class="nav-item" onclick="navAcao(abrirDivulgarRota)"><svg class="i"><use href="#i-megaphone"/></svg>Divulgar rota</button>
+      <button class="nav-item" onclick="navAcao(abrirDivulgacaoMassa)"><svg class="i"><use href="#i-upload"/></svg>Divulgação em massa</button>
+
+      <div class="nav-label">Motoristas</div>
+      <button class="nav-item" onclick="navAcao(()=>abrirMotorista('individual'))"><svg class="i"><use href="#i-user-plus"/></svg>Novo motorista</button>
+      <button class="nav-item" onclick="navAcao(()=>abrir('modalConsulta'))"><svg class="i"><use href="#i-user-search"/></svg>Consultar motorista</button>
+
+      <div class="nav-label">Configurações</div>
+      <button class="nav-item" onclick="navAcao(abrirGalpao)"><svg class="i"><use href="#i-warehouse"/></svg>Configurar galpão</button>
+    </nav>
+
+    <div class="side-foot">
+      <button class="nav-item" onclick="toggleTema()"><svg class="i" id="temaIco"><use href="#i-sun"/></svg><span id="temaTxt">Tema claro</span></button>
+      <button class="nav-item" onclick="sair()"><svg class="i"><use href="#i-logout"/></svg>Sair</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" onclick="toggleSidebar(false)"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon menu-btn" onclick="toggleSidebar(true)" aria-label="Abrir menu"><svg class="i"><use href="#i-menu"/></svg></button>
+      <div class="crumbs"><span class="crumbs-root">Operação</span> <span>/</span> <b>Rotas publicadas</b></div>
+      <div class="topbar-end">
+        <span class="live" id="liveBadge" title="Atualização em tempo real"><span class="live-dot"></span><span class="live-text" id="liveTxt">Conectando…</span></span>
+        <button class="btn btn-secondary btn-sm" onclick="busy(this,carregarRotas)"><svg class="i i-sm"><use href="#i-refresh"/></svg>Atualizar</button>
+      </div>
+    </header>
+
+    <main class="content" id="conteudo">
+      <section class="page-head">
+        <div>
+          <div class="eyebrow">Repasse de rotas</div>
+          <h1 class="page-title">Rotas publicadas</h1>
+          <p class="page-sub">Acompanhe as rotas disponíveis, as já repassadas e quem pegou cada uma.</p>
+        </div>
+        <div class="page-actions">
+          <img class="head-banner" src="shopiito.gif" alt="" onerror="this.remove()">
+          <button class="btn btn-secondary" onclick="abrirDivulgacaoMassa()"><svg class="i"><use href="#i-upload"/></svg>Importar planilha</button>
+          <button class="btn btn-primary" onclick="abrirDivulgarRota()"><svg class="i"><use href="#i-plus"/></svg>Divulgar rota</button>
+        </div>
+      </section>
+
+      <section class="kpis" aria-label="Resumo da operação">
+        <div class="kpi">
+          <span class="kpi-label"><span class="dot accent"></span>Rotas publicadas</span>
+          <strong class="kpi-value" id="kpiTotal">–</strong>
+          <span class="kpi-foot" id="kpiTotalFoot">no painel agora</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label"><span class="dot ok"></span>Disponíveis</span>
+          <strong class="kpi-value" id="kpiDisp">–</strong>
+          <span class="kpi-foot">aguardando motorista</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label"><span class="dot warn"></span>Repassadas</span>
+          <strong class="kpi-value" id="kpiRep">–</strong>
+          <span class="kpi-foot" id="kpiRepFoot">0% do total</span>
+          <div class="kpi-bar"><span id="kpiRepBar"></span></div>
+        </div>
+        <button class="kpi kpi-link" onclick="abrirMotoristasGalpao()">
+          <span class="kpi-label"><svg class="i i-sm"><use href="#i-users"/></svg>Motoristas no galpão</span>
+          <strong class="kpi-value" id="kpiGalpao">–</strong>
+          <span class="kpi-foot">Ver fila de presença →</span>
+        </button>
+      </section>
+
+      <section class="panel" aria-labelledby="tituloLista">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title" id="tituloLista">Lista de rotas</h2>
+            <p class="panel-sub">Atualiza sozinha quando um motorista pega uma rota.</p>
+          </div>
+          <div class="shift-control">
+            <div class="shift-copy">
+              <span id="shiftLbl">Turnos liberados</span>
+              <small>Vale para todas as rotas disponíveis</small>
+            </div>
+            <div class="shift-group" role="group" aria-labelledby="shiftLbl">
+              <label class="shift-toggle"><input type="checkbox" class="globalTurno" value="AM" checked onchange="salvarTurnosGlobais()"><span>AM</span></label>
+              <label class="shift-toggle"><input type="checkbox" class="globalTurno" value="SD" checked onchange="salvarTurnosGlobais()"><span>SD</span></label>
+              <label class="shift-toggle"><input type="checkbox" class="globalTurno" value="PM2" checked onchange="salvarTurnosGlobais()"><span>PM2</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="search">
+            <span class="sr-only">Buscar rotas</span>
+            <svg class="i"><use href="#i-search"/></svg>
+            <input id="busca" class="input" placeholder="Buscar rota, região, motorista ou ID" oninput="renderRotas()" autocomplete="off">
+            <kbd>/</kbd>
+          </label>
+          <div class="segmented" role="tablist" aria-label="Filtrar por status">
+            <button role="tab" data-filtro="todas" class="active" onclick="setFiltroStatus('todas')">Todas <span id="segTodas">0</span></button>
+            <button role="tab" data-filtro="disponivel" onclick="setFiltroStatus('disponivel')">Disponíveis <span id="segDisp">0</span></button>
+            <button role="tab" data-filtro="repassada" onclick="setFiltroStatus('repassada')">Repassadas <span id="segRep">0</span></button>
+          </div>
+          <div class="toolbar-end">
+            <button class="btn btn-ghost btn-sm" onclick="selecionarRotasVisiveis()">Selecionar visíveis</button>
+            <button class="btn btn-danger-ghost btn-sm" onclick="limparTodasRotas()"><svg class="i i-sm"><use href="#i-trash"/></svg>Excluir todas</button>
+          </div>
+        </div>
+
+        <div class="bulkbar" id="bulkRotas" hidden>
+          <strong><span id="selRotasCount">0</span> selecionada(s)</strong>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost btn-sm" onclick="desmarcarRotas()">Desmarcar</button>
+          <button class="btn btn-danger btn-sm" onclick="limparRotasSelecionadas()"><svg class="i i-sm"><use href="#i-trash"/></svg>Excluir selecionadas</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr>
+                <th class="col-check"><input type="checkbox" id="checkAllRotas" aria-label="Selecionar todas as rotas visíveis" onchange="this.checked?selecionarRotasVisiveis():desmarcarRotas()"></th>
+                <th>Rota</th>
+                <th>Liberada para</th>
+                <th>Status</th>
+                <th>Motorista</th>
+                <th>Repassada em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="listaRotas">
+              <tr><td colspan="7"><div class="skel" style="width:60%"></div></td></tr>
+              <tr><td colspan="7"><div class="skel" style="width:75%"></div></td></tr>
+              <tr><td colspan="7"><div class="skel" style="width:50%"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-foot">
+          <span id="rodapeRotas">Carregando rotas…</span>
+          <span id="ultimaAtualizacao"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ============ Motoristas no galpão ============ -->
+<div id="modalMotoristasGalpao" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloGalpao">
+  <div class="dialog dialog-lg">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-users"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloGalpao">Motoristas no galpão <span class="status status-ok" style="margin-left:8px;vertical-align:3px"><span id="qtdWaitingModal">0</span>&nbsp;aguardando</span></h2>
+        <p class="dialog-sub">Quem confirmou presença hoje, por ordem de chegada (considerando os segundos).</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalMotoristasGalpao')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-sm" onclick="busy(this,carregarWaiting)"><svg class="i i-sm"><use href="#i-refresh"/></svg>Atualizar lista</button>
+      <button class="btn btn-ghost btn-sm" onclick="selecionarWaitingVisiveis()">Selecionar todos</button>
+      <button class="btn btn-ghost btn-sm" onclick="desmarcarWaiting()">Desmarcar</button>
+      <div class="toolbar-end">
+        <button class="btn btn-danger btn-sm" id="btnExcluirWaiting" onclick="limparWaitingSelecionados()" disabled><svg class="i i-sm"><use href="#i-trash"/></svg>Excluir selecionados<span id="selWaitingCount"></span></button>
+        <button class="btn btn-danger-ghost btn-sm" onclick="limparWaitingHoje()">Limpar todos de hoje</button>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="overflow:auto">
+      <table class="data">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="checkAllWaiting" aria-label="Selecionar todos" onchange="this.checked?selecionarWaitingVisiveis():desmarcarWaiting()"></th>
+            <th>Ordem</th>
+            <th>Motorista</th>
+            <th>Veículo / turno</th>
+            <th>Telefone</th>
+            <th>Distância</th>
+            <th>Chegada</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="listaWaiting"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Divulgar rota ============ -->
+<div id="modalRota" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloRota">
+  <div class="dialog">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-megaphone"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloRota">Divulgar rota</h2>
+        <p class="dialog-sub">A rota aparece na hora para os motoristas elegíveis.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalRota')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Rota</span>
+          <input id="routeName" class="input mono" placeholder="Ex.: B-14+B-15/120">
+        </label>
+        <label class="field">
+          <span class="field-label">Região</span>
+          <input id="region" class="input" placeholder="Ex.: Guarulhos">
+        </label>
+      </div>
+      <div class="field">
+        <span class="field-label">Veículos permitidos</span>
+        <div class="option-grid">
+          <label class="option"><input type="checkbox" class="rotaVeiculo" value="FIORINO" checked><span>FIORINO</span></label>
+          <label class="option"><input type="checkbox" class="rotaVeiculo" value="PASSEIO" checked><span>PASSEIO</span></label>
+          <label class="option"><input type="checkbox" class="rotaVeiculo" value="MOTO"><span>MOTO</span></label>
+          <label class="option"><input type="checkbox" class="rotaVeiculo" value="VAN"><span>VAN</span></label>
+        </div>
+      </div>
+      <div class="notice notice-accent">
+        <svg class="i"><use href="#i-info"/></svg>
+        <div>A rota entra como <strong>Disponível</strong>. Só podem pegá-la motoristas com um dos veículos marcados e de um turno liberado no filtro geral (agora: <strong id="rotaTurnosInfo">AM, SD, PM2</strong>).</div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" onclick="fechar('modalRota')">Cancelar</button>
+      <button class="btn btn-primary" onclick="busy(this,criarRota)"><svg class="i i-sm"><use href="#i-megaphone"/></svg>Divulgar rota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Divulgação em massa ============ -->
+<div id="modalRotasMassa" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloMassa">
+  <div class="dialog dialog-md">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-upload"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloMassa">Divulgação em massa</h2>
+        <p class="dialog-sub">Publique várias rotas de uma vez a partir de uma planilha.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalRotasMassa')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div class="steps">
+        <div class="step"><span class="step-n">1</span><b>Baixe o modelo</b><p>Planilha pronta com as colunas certas.</p></div>
+        <div class="step"><span class="step-n">2</span><b>Preencha as rotas</b><div class="code-chips"><code>route_name</code><code>region</code><code>allowed_vehicles</code></div></div>
+        <div class="step"><span class="step-n">3</span><b>Envie o arquivo</b><p>CSV, XLS ou XLSX.</p></div>
+      </div>
+
+      <table class="example">
+        <thead><tr><th>route_name</th><th>region</th><th>allowed_vehicles</th></tr></thead>
+        <tbody>
+          <tr><td>B-14+B-15/120</td><td>Guarulhos</td><td>FIORINO,PASSEIO</td></tr>
+          <tr><td>A-10+A-11/95</td><td>São Paulo</td><td>MOTO</td></tr>
+          <tr><td>C-01+C-02/80</td><td>Jardim Adriana</td><td>FIORINO,PASSEIO,VAN</td></tr>
+        </tbody>
+      </table>
+
+      <label class="dropzone" id="dzRotas">
+        <input type="file" id="arquivoRotas" accept=".csv,.xlsx,.xls" onchange="mostrarArquivo(this,'dzRotasNome','dzRotas')">
+        <span class="dropzone-ico"><svg class="i"><use href="#i-sheet"/></svg></span>
+        <span><b id="dzRotasNome">Clique para escolher a planilha</b><small>ou arraste o arquivo até aqui</small></span>
+      </label>
+
+      <div class="notice">
+        <svg class="i"><use href="#i-info"/></svg>
+        <div>Os turnos de cada rota seguem o filtro geral do painel (agora: <strong id="massaTurnosInfo">AM, SD, PM2</strong>).</div>
+      </div>
+
+      <div id="progressRotas" class="import-progress">
+        <div class="import-progress-title"><span>Importando rotas</span><span id="progressRotasPercent">0%</span></div>
+        <div class="import-progress-bar"><div id="progressRotasFill" class="import-progress-fill"></div></div>
+        <div id="progressRotasStatus" class="import-progress-status">Aguardando início…</div>
+      </div>
+
+      <div id="resultadoRotasMassa" class="notice result" style="display:none"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost left" onclick="baixarModeloRotas()"><svg class="i i-sm"><use href="#i-download"/></svg>Baixar modelo Excel</button>
+      <button class="btn btn-secondary" onclick="fechar('modalRotasMassa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="busy(this,importarRotasArquivo)"><svg class="i i-sm"><use href="#i-upload"/></svg>Importar rotas</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Novo motorista ============ -->
+<div id="modalMotorista" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloMotorista">
+  <div class="dialog dialog-md">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-user-plus"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloMotorista">Cadastrar motorista</h2>
+        <p class="dialog-sub">Cadastre um motorista por vez ou importe uma lista completa.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalMotorista')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabIndividual" aria-selected="true" onclick="trocarAbaMotorista('individual')">Cadastro individual</button>
+      <button class="tab" role="tab" id="tabMassa" aria-selected="false" onclick="trocarAbaMotorista('massa')">Importar planilha</button>
+    </div>
+
+    <!-- Individual -->
+    <div id="painelIndividual">
+      <div class="dialog-body">
+        <div class="form-grid">
+          <label class="field">
+            <span class="field-label">ID do motorista</span>
+            <input id="driverId" class="input mono" placeholder="Ex.: 123456">
+          </label>
+          <label class="field">
+            <span class="field-label">Telefone</span>
+            <input id="telephone" class="input" placeholder="Ex.: 11999998888" inputmode="tel">
+          </label>
+          <label class="field span-2">
+            <span class="field-label">Nome completo</span>
+            <input id="driverName" class="input" placeholder="Nome do motorista">
+          </label>
+          <label class="field">
+            <span class="field-label">Tipo de veículo</span>
+            <select id="vehicleType" class="input">
+              <option>FIORINO</option><option>PASSEIO</option><option>MOTO</option><option>VAN</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Turno</span>
+            <select id="driverShift" class="input">
+              <option>AM</option><option>SD</option><option>PM2</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn-secondary" onclick="fechar('modalMotorista')">Cancelar</button>
+        <button class="btn btn-primary" onclick="busy(this,criarMotorista)"><svg class="i i-sm"><use href="#i-user-plus"/></svg>Cadastrar motorista</button>
+      </div>
+    </div>
+
+    <!-- Massa -->
+    <div id="painelMassa" hidden>
+      <div class="dialog-body">
+        <div class="notice">
+          <svg class="i"><use href="#i-info"/></svg>
+          <div>A planilha precisa das colunas abaixo. Se o ID já existir, os dados do motorista são atualizados.
+            <div class="code-chips"><code>driver_id</code><code>driver_name</code><code>vehicle_type</code><code>shift</code><code>telephone</code></div>
+          </div>
+        </div>
+        <label class="dropzone" id="dzMotoristas">
+          <input type="file" id="arquivoMotoristas" accept=".csv,.xlsx,.xls" onchange="mostrarArquivo(this,'dzMotoristasNome','dzMotoristas')">
+          <span class="dropzone-ico"><svg class="i"><use href="#i-sheet"/></svg></span>
+          <span><b id="dzMotoristasNome">Clique para escolher a planilha</b><small>CSV, XLS ou XLSX</small></span>
+        </label>
+
+        <div id="progressMotoristas" class="import-progress">
+          <div class="import-progress-title"><span>Importando motoristas</span><span id="progressMotoristasPercent">0%</span></div>
+          <div class="import-progress-bar"><div id="progressMotoristasFill" class="import-progress-fill"></div></div>
+          <div id="progressMotoristasStatus" class="import-progress-status">Aguardando início…</div>
+        </div>
+
+        <div id="resultadoMotoristasMassa" class="notice result" style="display:none"></div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn-ghost left" onclick="baixarModeloMotoristas()"><svg class="i i-sm"><use href="#i-download"/></svg>Baixar modelo Excel</button>
+        <button class="btn btn-secondary" onclick="fechar('modalMotorista')">Cancelar</button>
+        <button class="btn btn-primary" onclick="busy(this,importarMotoristasArquivo)"><svg class="i i-sm"><use href="#i-upload"/></svg>Importar motoristas</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Consultar motorista ============ -->
+<div id="modalConsulta" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloConsulta">
+  <div class="dialog dialog-md">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-user-search"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloConsulta">Consultar motorista</h2>
+        <p class="dialog-sub">Busque pelo ID para editar dados, ativar/desativar ou aplicar penalidade.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalConsulta')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <form class="search-row" onsubmit="event.preventDefault();busy(document.getElementById('btnConsultar'),consultarMotorista)">
+        <input id="consultaId" class="input mono" placeholder="Digite o ID do motorista" autocomplete="off">
+        <button id="btnConsultar" type="submit" class="btn btn-primary"><svg class="i i-sm"><use href="#i-search"/></svg>Consultar</button>
+      </form>
+
+      <div id="boxMotorista" style="display:none">
+        <div style="display:grid;gap:18px">
+          <div id="dadosMotorista" class="profile"></div>
+
+          <div class="section-title">Dados cadastrais</div>
+          <div class="form-grid">
+            <label class="field span-2">
+              <span class="field-label">Telefone</span>
+              <input id="editTelephone" class="input" placeholder="Telefone" inputmode="tel">
+            </label>
+            <label class="field">
+              <span class="field-label">Tipo de veículo</span>
+              <select id="editVehicleType" class="input"><option>FIORINO</option><option>PASSEIO</option><option>MOTO</option><option>VAN</option></select>
+            </label>
+            <label class="field">
+              <span class="field-label">Turno</span>
+              <select id="editShift" class="input"><option>AM</option><option>SD</option><option>PM2</option></select>
+            </label>
+          </div>
+          <div class="inline-actions">
+            <button class="btn btn-primary" onclick="busy(this,salvarMotorista)"><svg class="i i-sm"><use href="#i-check"/></svg>Salvar alterações</button>
+            <button class="btn btn-secondary" id="btnToggleMotorista" onclick="busy(this,toggleMotorista)"><svg class="i i-sm"><use href="#i-power"/></svg><span>Ativar/Desativar</span></button>
+          </div>
+
+          <div class="section-title">Penalidade</div>
+          <div class="form-grid">
+            <label class="field">
+              <span class="field-label">Duração</span>
+              <input id="punishAmount" class="input" type="number" min="1" value="15">
+            </label>
+            <label class="field">
+              <span class="field-label">Unidade</span>
+              <select id="punishUnit" class="input"><option value="minutes">Minutos</option><option value="hours" selected>Horas</option><option value="days">Dias</option></select>
+            </label>
+          </div>
+          <div class="inline-actions">
+            <button class="btn btn-warn" onclick="busy(this,punirMotorista)"><svg class="i i-sm"><use href="#i-ban"/></svg>Marcar como ofensor</button>
+            <button class="btn btn-secondary" onclick="busy(this,removerPunicao)"><svg class="i i-sm"><use href="#i-check"/></svg>Remover ofensor</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Configurar galpão ============ -->
+<div id="modalGalpao" class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloHub">
+  <div class="dialog">
+    <div class="dialog-head">
+      <div class="dialog-ico"><svg class="i"><use href="#i-warehouse"/></svg></div>
+      <div>
+        <h2 class="dialog-title" id="tituloHub">Configurar galpão</h2>
+        <p class="dialog-sub">Define onde o motorista precisa estar para confirmar presença.</p>
+      </div>
+      <button class="btn btn-ghost btn-icon close" onclick="fechar('modalGalpao')" aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <label class="field">
+        <span class="field-label">Nome do galpão</span>
+        <input id="hubName" class="input" placeholder="Ex.: Galpão Guarulhos">
+      </label>
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Latitude</span>
+          <input id="hubLat" class="input mono" placeholder="-23.4230" inputmode="decimal" oninput="atualizarLinkMapa()">
+        </label>
+        <label class="field">
+          <span class="field-label">Longitude</span>
+          <input id="hubLng" class="input mono" placeholder="-46.5232" inputmode="decimal" oninput="atualizarLinkMapa()">
+        </label>
+        <label class="field span-2">
+          <span class="field-label">Raio de presença (metros)</span>
+          <input id="hubRadius" class="input" type="number" min="1" placeholder="300">
+          <span class="field-hint">Motoristas fora desse raio não conseguem confirmar presença.</span>
+        </label>
+      </div>
+      <div class="inline-actions">
+        <button class="btn btn-secondary btn-sm" onclick="busy(this,usarMinhaLocalizacao)"><svg class="i i-sm"><use href="#i-crosshair"/></svg>Usar minha localização</button>
+        <a class="btn btn-ghost btn-sm" id="hubMapLink" href="#" target="_blank" rel="noopener" style="text-decoration:none"><svg class="i i-sm"><use href="#i-map"/></svg>Conferir no mapa</a>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" onclick="fechar('modalGalpao')">Cancelar</button>
+      <button class="btn btn-primary" onclick="busy(this,salvarGalpao)"><svg class="i i-sm"><use href="#i-check"/></svg>Salvar configuração</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://uytnqfzyctszgbvzcmad.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5dG5xZnp5Y3RzemdidnpjbWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDQwNDYsImV4cCI6MjA5MzgyMDA0Nn0.XM4GnBDTNS8n6dKvnXeN2mmGr7AFdr3kVio12xJ-gzw";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let adminPass = sessionStorage.getItem("adminPass") || "";
+let rotas = [];
+let waiting = [];
+let motoristaAtual = null;
+let turnosGlobaisConfig = ["AM","SD","PM2"];
+let filtroStatus = "todas";
+let rotasVisiveis = [];
+let iniciado = false;
+const selRotas = new Set();
+const selWaiting = new Set();
+
+/* ---------- Utilidades ---------- */
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ico = (nome, cls = "") => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${nome}"/></svg>`;
+const arr = v => Array.isArray(v) ? v : [];
+const pausa = ms => new Promise(r => setTimeout(r, ms));
+
+function fmtVeiculos(v){return Array.isArray(v) ? v.join(", ") : "-"}
+function fmtTurnos(v){return Array.isArray(v) ? v.join(", ") : "-"}
+function fmtData(v){
+  return v ? new Date(v).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "-";
+}
+function fmtHora(v){return v ? new Date(v).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "-"}
+function fmtDia(v){
+  if(!v) return "";
+  const d = new Date(v), hoje = new Date();
+  const ontem = new Date(); ontem.setDate(hoje.getDate() - 1);
+  if(d.toDateString() === hoje.toDateString()) return "Hoje";
+  if(d.toDateString() === ontem.toDateString()) return "Ontem";
+  return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+function iniciais(nome){
+  const p = String(nome || "?").trim().split(/\s+/);
+  return ((p[0]?.[0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase() || "?";
+}
+
+/* Botão com estado de carregamento */
+async function busy(btn, fn){
+  if(!btn) return fn();
+  if(btn.classList.contains("is-busy")) return;
+  btn.classList.add("is-busy");
+  btn.disabled = true;
+  try{ return await fn(); }
+  finally{ btn.classList.remove("is-busy"); btn.disabled = false; }
+}
+
+/* ---------- Modais ---------- */
+let ultimoFoco = null;
+function abrir(id){
+  const m = $(id); if(!m) return;
+  if(!document.querySelector(".modal.show")) ultimoFoco = document.activeElement;
+  m.classList.add("show");
+  document.body.classList.add("modal-open");
+  const alvo = m.querySelector("[autofocus], .dialog-body input:not([type=checkbox]):not([type=file]), .dialog-foot .btn-primary");
+  setTimeout(() => { try{ alvo && alvo.focus(); }catch(e){} }, 50);
+}
+function fechar(id){
+  const m = $(id); if(!m) return;
+  m.classList.remove("show");
+  if(!document.querySelector(".modal.show")){
+    document.body.classList.remove("modal-open");
+    if(ultimoFoco && ultimoFoco.focus){ try{ ultimoFoco.focus(); }catch(e){} }
+  }
+}
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    if($("modalConfirmacao").classList.contains("show")) return cancelarConfirmacao();
+    if($("modalMsg").classList.contains("show")) return fechar("modalMsg");
+    const abertos = [...document.querySelectorAll(".modal.show")];
+    if(abertos.length) return fechar(abertos[abertos.length - 1].id);
+    toggleSidebar(false);
+  }
+  if(e.key === "/" && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) && !document.querySelector(".modal.show") && !document.body.classList.contains("locked")){
+    e.preventDefault(); $("busca").focus();
+  }
+});
+document.querySelectorAll(".modal").forEach(m => {
+  m.addEventListener("mousedown", e => {
+    if(e.target !== m) return;
+    if(m.id === "modalConfirmacao") cancelarConfirmacao(); else fechar(m.id);
+  });
+});
+
+/* ---------- Avisos ---------- */
+function avisarAdmin(texto, titulo = "Aviso", icone = "!"){ toast(texto, titulo, icone); }
+
+function toast(t, titulo = "Aviso", icon = "!"){
+  if(icon === "✓") return mostrarToast(t, titulo);
+  const tom = icon === "?" ? "info" : (/erro/i.test(titulo) ? "danger" : "warn");
+  $("msgIcon").dataset.tone = tom;
+  $("msgIcon").innerHTML = ico(tom === "info" ? "help" : "alert");
+  $("msgTitulo").innerText = titulo;
+  $("msgTexto").innerText = t;
+  abrir("modalMsg");
+}
+
+function mostrarToast(texto, titulo = "Tudo certo"){
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.setAttribute("role", "status");
+  el.innerHTML = `<div class="toast-ico">${ico("check")}</div><div><b>${esc(titulo)}</b><span>${esc(texto)}</span></div>`;
+  $("toast").appendChild(el);
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 220); }, 3400);
+}
+
+let acaoConfirmacao = null;
+function confirmarModal(titulo, texto, callback, icon = "!", rotulo = "Confirmar"){
+  acaoConfirmacao = callback;
+  const info = icon === "?";
+  $("confirmIcon").dataset.tone = info ? "info" : "danger";
+  $("confirmIcon").innerHTML = ico(info ? "help" : "alert");
+  $("confirmTitulo").innerText = titulo;
+  $("confirmTexto").innerText = texto;
+  const b = $("confirmBtn");
+  b.innerText = rotulo;
+  b.className = "btn " + (info ? "btn-primary" : "btn-danger");
+  abrir("modalConfirmacao");
+}
+function cancelarConfirmacao(){ acaoConfirmacao = null; fechar("modalConfirmacao"); }
+$("confirmBtn").addEventListener("click", () => {
+  const cb = acaoConfirmacao;
+  acaoConfirmacao = null;
+  fechar("modalConfirmacao");
+  if(typeof cb === "function") cb();
+});
+
+/* ---------- Supabase ---------- */
+async function rpc(name, args){
+  const {data, error} = await sb.rpc(name, args);
+  if(error) throw error;
+  if(data && data.success === false) throw new Error(data.error || "Operação não autorizada.");
+  return data;
+}
+
+/* ---------- Login / sessão ---------- */
+function toggleSenha(){ const s = $("senha"); s.type = s.type === "password" ? "text" : "password"; s.focus(); }
+function erroLogin(msg){ $("loginErro").innerHTML = msg ? ico("alert","i-sm") + esc(msg) : ""; }
+
+async function login(auto = false){
+  const pass = auto ? adminPass : $("senha").value.trim();
+  if(!pass){ erroLogin("Digite a senha para continuar."); $("senha").focus(); return; }
+  erroLogin("");
+  try{
+    const {data, error} = await sb.rpc("admin_login", {p_password: pass});
+    if(error || !data){
+      if(auto){ sessionStorage.removeItem("adminPass"); adminPass = ""; return; }
+      erroLogin("Senha incorreta. Tente novamente.");
+      $("senha").select();
+      return;
+    }
+  }catch(e){
+    erroLogin("Não foi possível conectar. Verifique sua internet.");
+    return;
+  }
+  adminPass = pass;
+  sessionStorage.setItem("adminPass", pass);
+  document.body.classList.remove("locked");
+  fechar("modalLogin");
+  $("senha").value = "";
+  iniciar();
+}
+
+function sair(){
+  sessionStorage.removeItem("adminPass");
+  location.reload();
+}
+
+async function iniciar(){
+  if(iniciado) return;
+  iniciado = true;
+  await carregarTurnosGlobais();
+  await carregarRotas();
+  await carregarWaiting();
+
+  sb.channel("admin-routes")
+    .on("postgres_changes", {event:"*", schema:"public", table:"routes"}, () => carregarRotas())
+    .subscribe(status => definirAoVivo(status === "SUBSCRIBED"));
+
+  sb.channel("admin-waiting")
+    .on("postgres_changes", {event:"*", schema:"public", table:"driver_waiting_hub"}, () => carregarWaiting())
+    .subscribe();
+}
+
+function definirAoVivo(on){
+  $("liveBadge").classList.toggle("on", on);
+  $("liveTxt").innerText = on ? "Tempo real ativo" : "Reconectando…";
+}
+
+/* ---------- Navegação / tema ---------- */
+function toggleSidebar(abrirMenu){
+  $("sidebar").classList.toggle("open", !!abrirMenu);
+  $("scrim").classList.toggle("show", !!abrirMenu);
+}
+function navAcao(fn){ toggleSidebar(false); fn(); }
+function irParaRotas(){ toggleSidebar(false); window.scrollTo({top:0, behavior:"smooth"}); }
+
+function aplicarTema(t){
+  document.documentElement.dataset.theme = t;
+  $("temaIco").innerHTML = `<use href="#i-${t === "dark" ? "sun" : "moon"}"/>`;
+  $("temaTxt").innerText = t === "dark" ? "Tema claro" : "Tema escuro";
+}
+function toggleTema(){
+  const novo = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  try{ localStorage.setItem("adminTheme", novo); }catch(e){}
+  aplicarTema(novo);
+}
+
+/* ---------- Rotas ---------- */
+async function carregarRotas(){
+  try{
+    rotas = await rpc("admin_get_routes", {p_password: adminPass}) || [];
+  }catch(e){
+    toast("Não foi possível carregar as rotas. Tente atualizar em instantes.", "Erro ao carregar", "!");
+    return;
+  }
+  $("ultimaAtualizacao").innerText = "Atualizado às " + fmtHora(new Date());
+  renderRotas();
+}
+
+function setFiltroStatus(f){
+  filtroStatus = f;
+  document.querySelectorAll(".segmented [data-filtro]").forEach(b => {
+    const ativo = b.dataset.filtro === f;
+    b.classList.toggle("active", ativo);
+    b.setAttribute("aria-selected", ativo);
+  });
+  renderRotas();
+}
+
+function renderRotas(){
+  const termo = ($("busca").value || "").toLowerCase().trim();
+  const total = rotas.length;
+  const disp = rotas.filter(r => r.status === "disponivel").length;
+  const rep = total - disp;
+  const pct = total ? Math.round(rep / total * 100) : 0;
+
+  $("kpiTotal").innerText = total;
+  $("kpiDisp").innerText = disp;
+  $("kpiRep").innerText = rep;
+  $("kpiRepFoot").innerText = pct + "% do total";
+  $("kpiRepBar").style.width = pct + "%";
+  $("segTodas").innerText = total;
+  $("segDisp").innerText = disp;
+  $("segRep").innerText = rep;
+
+  const existentes = new Set(rotas.map(r => String(r.id)));
+  [...selRotas].forEach(id => { if(!existentes.has(id)) selRotas.delete(id); });
+
+  rotasVisiveis = rotas
+    .filter(r => filtroStatus === "todas" || (filtroStatus === "disponivel" ? r.status === "disponivel" : r.status !== "disponivel"))
+    .filter(r => [
+      r.route_name, r.region, r.claimed_by_driver_name, r.claimed_by_driver_id, r.status,
+      r.claimed_vehicle_type, r.claimed_telephone, fmtTurnos(r.allowed_shifts)
+    ].join(" ").toLowerCase().includes(termo));
+
+  $("listaRotas").innerHTML = rotasVisiveis.length ? rotasVisiveis.map(linhaRota).join("") : vazioRotas(termo);
+  $("rodapeRotas").innerText = total
+    ? `Exibindo ${rotasVisiveis.length} de ${total} rota${total === 1 ? "" : "s"}`
+    : "Nenhuma rota publicada";
+  atualizarSelecaoRotasUI();
+}
+
+function linhaRota(r){
+  const disponivel = r.status === "disponivel";
+  const id = String(r.id);
+  const sel = selRotas.has(id);
+  const veiculos = arr(r.allowed_vehicles);
+  const turnos = arr(r.allowed_shifts);
+  const turnoPego = r.claimed_shift || r.driver_shift;
+
+  const motorista = r.claimed_by_driver_name || r.claimed_by_driver_id
+    ? `<div class="cell-main">${esc(r.claimed_by_driver_name || "—")}</div>
+       <div class="cell-sub mono">ID ${esc(r.claimed_by_driver_id || "—")}${r.claimed_vehicle_type ? " · " + esc(r.claimed_vehicle_type) : ""}${turnoPego ? " · " + esc(turnoPego) : ""}</div>
+       ${r.claimed_telephone ? `<div class="cell-sub">${ico("phone")}${esc(r.claimed_telephone)}</div>` : ""}`
+    : `<span class="muted-dash">Aguardando motorista</span>`;
+
+  const quando = r.claimed_at
+    ? `<div class="cell-main mono">${fmtHora(r.claimed_at)}</div><div class="cell-sub">${fmtDia(r.claimed_at)}</div>`
+    : `<span class="muted-dash">—</span>`;
+
+  return `
+    <tr class="${sel ? "is-selected" : ""}">
+      <td class="col-check"><input type="checkbox" class="rotaCheck" value="${esc(id)}" ${sel ? "checked" : ""} onchange="toggleSelRota(this)" aria-label="Selecionar rota ${esc(r.route_name)}"></td>
+      <td data-label="Rota">
+        <div class="route-name mono">${esc(r.route_name)}</div>
+        <div class="cell-sub">${ico("pin")}${esc(r.region || "Sem região")}</div>
+      </td>
+      <td data-label="Liberada para">
+        <div class="chips">${veiculos.length ? veiculos.map(v => `<span class="chip">${esc(v)}</span>`).join("") : `<span class="chip chip-empty">Sem veículo</span>`}</div>
+        <div class="chips">${turnos.length ? turnos.map(t => `<span class="chip chip-shift">${esc(t)}</span>`).join("") : `<span class="chip chip-empty">Sem turno</span>`}</div>
+      </td>
+      <td data-label="Status"><span class="status ${disponivel ? "status-ok" : "status-taken"}">${disponivel ? "Disponível" : "Repassada"}</span></td>
+      <td data-label="Motorista">${motorista}</td>
+      <td data-label="Repassada em">${quando}</td>
+      <td class="col-actions">
+        <div class="row-actions">
+          ${disponivel ? "" : `<button class="btn btn-secondary btn-sm" onclick="reabrirRota(${Number(r.id)})" title="Deixar a rota disponível de novo">${ico("rotate","i-sm")}Reabrir</button>`}
+          <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="excluirRota(${Number(r.id)})" title="Excluir rota" aria-label="Excluir rota ${esc(r.route_name)}">${ico("trash","i-sm")}</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function vazioRotas(termo){
+  let titulo = "Nenhuma rota publicada", texto = "Divulgue uma rota ou importe uma planilha para começar.",
+      botao = `<button class="btn btn-primary btn-sm" onclick="abrirDivulgarRota()">${ico("plus","i-sm")}Divulgar rota</button>`;
+  if(rotas.length){
+    titulo = "Nenhuma rota encontrada";
+    texto = termo ? `Nada corresponde a “${esc(termo)}” com o filtro atual.` : "Não há rotas com esse status no momento.";
+    botao = `<button class="btn btn-secondary btn-sm" onclick="limparFiltros()">Limpar filtros</button>`;
+  }
+  return `<tr><td colspan="7"><div class="empty"><div class="empty-ico">${ico("route")}</div><h3>${titulo}</h3><p>${texto}</p>${botao}</div></td></tr>`;
+}
+function limparFiltros(){ $("busca").value = ""; setFiltroStatus("todas"); }
+
+function toggleSelRota(el){
+  el.checked ? selRotas.add(el.value) : selRotas.delete(el.value);
+  el.closest("tr").classList.toggle("is-selected", el.checked);
+  atualizarSelecaoRotasUI();
+}
+function atualizarSelecaoRotasUI(){
+  const n = selRotas.size;
+  $("bulkRotas").hidden = n === 0;
+  $("selRotasCount").innerText = n;
+  const all = $("checkAllRotas");
+  const visSel = rotasVisiveis.filter(r => selRotas.has(String(r.id))).length;
+  all.checked = rotasVisiveis.length > 0 && visSel === rotasVisiveis.length;
+  all.indeterminate = visSel > 0 && visSel < rotasVisiveis.length;
+}
+
+function veiculosSelecionadosRota(){return Array.from(document.querySelectorAll(".rotaVeiculo:checked")).map(i => i.value)}
+function turnosSelecionadosRota(){return Array.from(document.querySelectorAll(".globalTurno:checked")).map(i => i.value)}
+function idsRotasSelecionadas(){return [...selRotas].map(Number).filter(Boolean)}
+function selecionarRotasVisiveis(){ rotasVisiveis.forEach(r => selRotas.add(String(r.id))); renderRotas(); }
+function desmarcarRotas(){ selRotas.clear(); renderRotas(); }
+
+function abrirDivulgarRota(){
+  $("rotaTurnosInfo").innerText = turnosSelecionadosRota().join(", ") || "nenhum";
+  abrir("modalRota");
+}
+function abrirDivulgacaoMassa(){
+  $("massaTurnosInfo").innerText = turnosSelecionadosRota().join(", ") || "nenhum";
+  abrir("modalRotasMassa");
+}
+
+/* Turnos globais */
+async function carregarTurnosGlobais(){
+  try{
+    const {data, error} = await sb.rpc("get_hub_config_public");
+    if(error) throw error;
+    const cfg = Array.isArray(data) ? data[0] : data;
+    turnosGlobaisConfig = (cfg && Array.isArray(cfg.global_allowed_shifts) && cfg.global_allowed_shifts.length)
+      ? cfg.global_allowed_shifts : ["AM","SD","PM2"];
+  }catch(e){
+    turnosGlobaisConfig = ["AM","SD","PM2"];
+  }
+  aplicarTurnosGlobaisNaTela();
+}
+function aplicarTurnosGlobaisNaTela(){
+  document.querySelectorAll(".globalTurno").forEach(input => { input.checked = turnosGlobaisConfig.includes(input.value); });
+}
+async function salvarTurnosGlobais(){
+  const shifts = turnosSelecionadosRota();
+  if(!shifts.length){
+    toast("Deixe pelo menos um turno liberado.", "Atenção", "!");
+    aplicarTurnosGlobaisNaTela();
+    return;
+  }
+  turnosGlobaisConfig = shifts;
+  try{
+    await rpc("admin_update_all_route_shifts", {p_password: adminPass, p_allowed_shifts: shifts});
+    toast("Turnos liberados: " + shifts.join(", ") + ".", "Turnos atualizados", "✓");
+    carregarRotas();
+  }catch(e){
+    toast(e.message || "Erro ao salvar os turnos.", "Erro", "!");
+    await carregarTurnosGlobais();
+  }
+}
+
+async function criarRota(){
+  const selected = veiculosSelecionadosRota();
+  const shifts = turnosSelecionadosRota();
+  if(!routeName.value.trim() || !region.value.trim()){ toast("Preencha o nome da rota e a região.", "Faltam dados", "!"); return; }
+  if(!selected.length){ toast("Marque pelo menos um tipo de veículo.", "Faltam dados", "!"); return; }
+  if(!shifts.length){ toast("Libere pelo menos um turno no filtro geral.", "Faltam dados", "!"); return; }
+  try{
+    await rpc("admin_create_route", {
+      p_password: adminPass,
+      p_route_name: routeName.value.trim(),
+      p_region: region.value.trim(),
+      p_allowed_vehicles: selected,
+      p_allowed_shifts: shifts
+    });
+    const nome = routeName.value.trim();
+    routeName.value = "";
+    region.value = "";
+    fechar("modalRota");
+    toast(`A rota ${nome} já está disponível para os motoristas.`, "Rota divulgada", "✓");
+    carregarRotas();
+  }catch(e){ toast(e.message || "Erro ao criar rota.", "Erro", "!"); }
+}
+
+function excluirRota(id){
+  const r = rotas.find(x => Number(x.id) === Number(id));
+  confirmarModal("Excluir rota", `A rota ${r ? r.route_name : ""} será removida do sistema. Esta ação não pode ser desfeita.`, async () => {
+    try{
+      await rpc("admin_delete_route", {p_password: adminPass, p_route_id: id});
+      selRotas.delete(String(id));
+      toast("Rota excluída.", "Tudo certo", "✓");
+      carregarRotas();
+    }catch(e){ toast(e.message || "Erro ao excluir.", "Erro", "!"); }
+  }, "!", "Excluir rota");
+}
+
+function reabrirRota(id){
+  const r = rotas.find(x => Number(x.id) === Number(id));
+  confirmarModal("Reabrir rota", `A rota ${r ? r.route_name : ""} volta a ficar disponível e o motorista atual é liberado.`, async () => {
+    try{
+      await rpc("admin_reopen_route", {p_password: adminPass, p_route_id: id});
+      toast("A rota está disponível novamente.", "Rota reaberta", "✓");
+      carregarRotas();
+    }catch(e){ toast(e.message || "Erro ao reabrir.", "Erro", "!"); }
+  }, "?", "Reabrir rota");
+}
+
+async function excluirRotasEmLote(ids){
+  let ok = 0, falhas = 0;
+  for(const id of ids){
+    try{ await rpc("admin_delete_route", {p_password: adminPass, p_route_id: id}); ok++; selRotas.delete(String(id)); }
+    catch(e){ falhas++; }
+  }
+  carregarRotas();
+  if(falhas) toast(`${ok} rota(s) excluída(s). ${falhas} não puderam ser excluídas.`, "Exclusão parcial", "!");
+  else toast(`${ok} rota(s) excluída(s).`, "Tudo certo", "✓");
+}
+function limparRotasSelecionadas(){
+  const ids = idsRotasSelecionadas();
+  if(!ids.length) return toast("Selecione ao menos uma rota.", "Atenção", "!");
+  confirmarModal("Excluir selecionadas", `Excluir ${ids.length} rota(s) selecionada(s)? Esta ação não pode ser desfeita.`, () => excluirRotasEmLote(ids), "!", "Excluir " + ids.length);
+}
+function limparTodasRotas(){
+  const ids = rotas.map(r => Number(r.id)).filter(Boolean);
+  if(!ids.length) return toast("Não há rotas para excluir.", "Atenção", "!");
+  confirmarModal("Excluir todas as rotas", `Todas as ${ids.length} rotas do painel serão removidas, inclusive as já repassadas. Esta ação não pode ser desfeita.`, () => excluirRotasEmLote(ids), "!", "Excluir todas");
+}
+
+/* ---------- Motoristas ---------- */
+function abrirMotorista(aba){ trocarAbaMotorista(aba || "individual"); abrir("modalMotorista"); }
+function trocarAbaMotorista(aba){
+  const ind = aba === "individual";
+  $("tabIndividual").setAttribute("aria-selected", ind);
+  $("tabMassa").setAttribute("aria-selected", !ind);
+  $("painelIndividual").hidden = !ind;
+  $("painelMassa").hidden = ind;
+}
+
+async function criarMotorista(){
+  if(!driverId.value.trim() || !driverName.value.trim()) return toast("Informe pelo menos o ID e o nome do motorista.", "Faltam dados", "!");
+  try{
+    await rpc("admin_create_driver", {
+      p_password: adminPass,
+      p_driver_id: driverId.value.trim(),
+      p_driver_name: driverName.value.trim(),
+      p_vehicle_type: vehicleType.value,
+      p_shift: driverShift.value,
+      p_telephone: telephone.value.trim()
+    });
+    const nome = driverName.value.trim();
+    driverId.value = ""; driverName.value = ""; telephone.value = ""; driverShift.value = "AM";
+    fechar("modalMotorista");
+    toast(`${nome} foi cadastrado(a).`, "Motorista cadastrado", "✓");
+  }catch(e){ toast(e.message || "Erro ao cadastrar motorista.", "Erro", "!"); }
+}
+
+async function consultarMotorista(){
+  const id = consultaId.value.trim();
+  if(!id) return toast("Informe o ID do motorista.", "Atenção", "!");
+  try{
+    const data = await rpc("admin_get_driver", {p_password: adminPass, p_driver_id: id});
+    if(!data){ boxMotorista.style.display = "none"; return toast("Nenhum motorista encontrado com esse ID.", "Não encontrado", "!"); }
+    motoristaAtual = data;
+    const punido = data.punished_until && new Date(data.punished_until) > new Date();
+    dadosMotorista.innerHTML = `
+      <div class="avatar">${esc(iniciais(data.driver_name))}</div>
+      <div style="min-width:0">
+        <div class="profile-name">${esc(data.driver_name)}</div>
+        <div class="cell-sub mono">ID ${esc(data.driver_id)}${data.telephone ? " · " + esc(data.telephone) : ""}</div>
+        <div class="profile-meta">
+          <span class="status ${data.active ? "status-ok" : "status-neutral"}">${data.active ? "Ativo" : "Desativado"}</span>
+          <span class="chip">${esc(data.vehicle_type || "—")}</span>
+          <span class="chip chip-shift">${esc(data.shift || "—")}</span>
+          ${punido ? `<span class="status status-danger">Ofensor até ${esc(fmtData(data.punished_until))}</span>` : ""}
+        </div>
+      </div>`;
+    editTelephone.value = data.telephone || "";
+    editVehicleType.value = data.vehicle_type || "FIORINO";
+    editShift.value = data.shift || "AM";
+    $("btnToggleMotorista").querySelector("span").innerText = data.active ? "Desativar motorista" : "Ativar motorista";
+    boxMotorista.style.display = "block";
+  }catch(e){ toast(e.message || "Erro ao consultar.", "Erro", "!"); }
+}
+async function salvarMotorista(){
+  if(!motoristaAtual) return;
+  try{
+    await rpc("admin_update_driver", {p_password: adminPass, p_driver_id: motoristaAtual.driver_id, p_vehicle_type: editVehicleType.value, p_shift: editShift.value, p_telephone: editTelephone.value.trim()});
+    toast("Os dados foram salvos.", "Motorista atualizado", "✓");
+    await consultarMotorista();
+  }catch(e){ toast(e.message || "Erro ao salvar.", "Erro", "!"); }
+}
+async function toggleMotorista(){
+  if(!motoristaAtual) return;
+  try{
+    await rpc("admin_toggle_driver", {p_password: adminPass, p_driver_id: motoristaAtual.driver_id});
+    toast(motoristaAtual.active ? "O motorista foi desativado." : "O motorista foi ativado.", "Status alterado", "✓");
+    await consultarMotorista();
+  }catch(e){ toast(e.message || "Erro ao alterar status.", "Erro", "!"); }
+}
+async function punirMotorista(){
+  if(!motoristaAtual) return;
+  try{
+    await rpc("admin_punish_driver", {p_password: adminPass, p_driver_id: motoristaAtual.driver_id, p_amount: Number(punishAmount.value || 15), p_unit: punishUnit.value});
+    toast("O motorista foi marcado como ofensor.", "Penalidade aplicada", "✓");
+    await consultarMotorista();
+  }catch(e){ toast(e.message || "Erro ao aplicar punição.", "Erro", "!"); }
+}
+async function removerPunicao(){
+  if(!motoristaAtual) return;
+  try{
+    await rpc("admin_remove_punish_driver", {p_password: adminPass, p_driver_id: motoristaAtual.driver_id});
+    toast("A penalidade foi removida.", "Ofensor removido", "✓");
+    await consultarMotorista();
+  }catch(e){ toast(e.message || "Erro ao remover punição.", "Erro", "!"); }
+}
+
+/* ---------- Galpão ---------- */
+async function abrirGalpao(){
+  try{
+    const {data} = await sb.rpc("get_hub_config_public");
+    const cfg = Array.isArray(data) ? data[0] : data;
+    if(cfg){
+      hubName.value = cfg.hub_name || "Galpão";
+      hubLat.value = cfg.latitude ?? "";
+      hubLng.value = cfg.longitude ?? "";
+      hubRadius.value = cfg.radius_meters || 300;
+    }
+  }catch(e){}
+  atualizarLinkMapa();
+  abrir("modalGalpao");
+}
+function atualizarLinkMapa(){
+  const lat = hubLat.value.trim(), lng = hubLng.value.trim();
+  const a = $("hubMapLink");
+  const ok = lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng));
+  a.href = ok ? `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}` : "#";
+  a.style.pointerEvents = ok ? "" : "none";
+  a.style.opacity = ok ? "" : ".45";
+}
+function usarMinhaLocalizacao(){
+  return new Promise(resolve => {
+    if(!navigator.geolocation){ toast("Seu navegador não permite obter a localização.", "Atenção", "!"); return resolve(); }
+    navigator.geolocation.getCurrentPosition(pos => {
+      hubLat.value = pos.coords.latitude.toFixed(6);
+      hubLng.value = pos.coords.longitude.toFixed(6);
+      atualizarLinkMapa();
+      resolve();
+    }, () => { toast("Não foi possível obter sua localização. Verifique a permissão do navegador.", "Atenção", "!"); resolve(); },
+    {enableHighAccuracy: true, timeout: 10000});
+  });
+}
+async function salvarGalpao(){
+  const lat = Number(hubLat.value), lng = Number(hubLng.value), raio = Number(hubRadius.value);
+  if(!hubLat.value.trim() || !hubLng.value.trim() || isNaN(lat) || isNaN(lng)) return toast("Informe latitude e longitude válidas.", "Faltam dados", "!");
+  if(!raio || raio <= 0) return toast("Informe um raio maior que zero.", "Faltam dados", "!");
+  const {data, error} = await sb.rpc("admin_save_hub_config", {
+    p_password: adminPass,
+    p_hub_name: hubName.value.trim() || "Galpão",
+    p_latitude: lat,
+    p_longitude: lng,
+    p_radius_meters: raio
+  });
+  if(error || !data || !data.success){ toast(data?.error || "Erro ao salvar galpão.", "Erro", "!"); return; }
+  fechar("modalGalpao");
+  toast("A localização e o raio foram salvos.", "Galpão atualizado", "✓");
+}
+
+/* ---------- Motoristas no galpão ---------- */
+function abrirMotoristasGalpao(){ abrir("modalMotoristasGalpao"); carregarWaiting(); }
+
+function atualizarContadorGalpao(qtd){
+  const total = Number(qtd || 0);
+  if($("qtdWaitingBtn")) $("qtdWaitingBtn").innerText = total;
+  if($("qtdWaitingModal")) $("qtdWaitingModal").innerText = total;
+  if($("kpiGalpao")) $("kpiGalpao").innerText = total;
+}
+
+async function carregarWaiting(){
+  if(!adminPass) return;
+  const {data, error} = await sb.rpc("admin_get_waiting", {p_password: adminPass});
+  if(error){
+    atualizarContadorGalpao(0);
+    $("listaWaiting").innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-ico">${ico("alert")}</div><h3>Erro ao carregar a lista</h3><p>Tente atualizar em instantes.</p></div></td></tr>`;
+    return;
+  }
+  waiting = (data || []).slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  const existentes = new Set(waiting.map(w => String(w.id)));
+  [...selWaiting].forEach(id => { if(!existentes.has(id)) selWaiting.delete(id); });
+  atualizarContadorGalpao(waiting.length);
+  renderWaiting();
+}
+
+function renderWaiting(){
+  $("listaWaiting").innerHTML = waiting.length ? waiting.map((w, i) => {
+    const id = String(w.id), sel = selWaiting.has(id);
+    const dist = w.distance_meters != null ? Math.round(Number(w.distance_meters || 0)) + " m" : "—";
+    return `
+      <tr class="${sel ? "is-selected" : ""}">
+        <td class="col-check"><input type="checkbox" class="waitingCheck" value="${esc(id)}" ${sel ? "checked" : ""} onchange="toggleSelWaiting(this)" aria-label="Selecionar ${esc(w.driver_name)}"></td>
+        <td data-label="Ordem"><span class="pos">${i + 1}</span></td>
+        <td data-label="Motorista"><div class="cell-main">${esc(w.driver_name || "—")}</div><div class="cell-sub mono">ID ${esc(w.driver_id || "—")}</div></td>
+        <td data-label="Veículo / turno"><div class="chips"><span class="chip">${esc(w.vehicle_type || "—")}</span><span class="chip chip-shift">${esc(w.shift || "—")}</span></div></td>
+        <td data-label="Telefone">${w.telephone ? esc(w.telephone) : '<span class="muted-dash">—</span>'}</td>
+        <td data-label="Distância" class="mono">${dist}</td>
+        <td data-label="Chegada"><div class="cell-main mono">${fmtHora(w.created_at)}</div><div class="cell-sub">${fmtDia(w.created_at)}</div></td>
+        <td data-label="Status"><span class="status status-info">${esc(w.status || "aguardando")}</span></td>
+        <td class="col-actions"><button class="btn btn-danger-ghost btn-icon btn-sm" onclick="excluirWaiting(${Number(w.id)})" title="Remover da lista" aria-label="Remover ${esc(w.driver_name)}">${ico("trash","i-sm")}</button></td>
+      </tr>`;
+  }).join("") : `<tr><td colspan="9"><div class="empty"><div class="empty-ico">${ico("warehouse")}</div><h3>Ninguém aguardando no galpão</h3><p>Quando um motorista confirmar presença hoje, ele aparece aqui por ordem de chegada.</p></div></td></tr>`;
+  atualizarSelecaoWaitingUI();
+}
+
+function toggleSelWaiting(el){
+  el.checked ? selWaiting.add(el.value) : selWaiting.delete(el.value);
+  el.closest("tr").classList.toggle("is-selected", el.checked);
+  atualizarSelecaoWaitingUI();
+}
+function atualizarSelecaoWaitingUI(){
+  const n = selWaiting.size;
+  $("btnExcluirWaiting").disabled = n === 0;
+  $("selWaitingCount").innerText = n ? ` (${n})` : "";
+  const all = $("checkAllWaiting");
+  all.checked = waiting.length > 0 && n === waiting.length;
+  all.indeterminate = n > 0 && n < waiting.length;
+}
+function selecionarWaitingVisiveis(){ waiting.forEach(w => selWaiting.add(String(w.id))); renderWaiting(); }
+function desmarcarWaiting(){ selWaiting.clear(); renderWaiting(); }
+
+function excluirWaiting(id){
+  confirmarModal("Remover presença", "Este motorista sairá da lista do galpão.", async () => {
+    try{
+      await rpc("admin_delete_waiting", {p_password: adminPass, p_id: id});
+      selWaiting.delete(String(id));
+      toast("Presença removida.", "Tudo certo", "✓");
+      carregarWaiting();
+    }catch(e){ toast(e.message || "Erro ao remover.", "Erro", "!"); }
+  }, "!", "Remover");
+}
+async function excluirWaitingEmLote(ids){
+  let ok = 0, falhas = 0;
+  for(const id of ids){
+    try{ await rpc("admin_delete_waiting", {p_password: adminPass, p_id: id}); ok++; selWaiting.delete(String(id)); }
+    catch(e){ falhas++; }
+  }
+  carregarWaiting();
+  if(falhas) toast(`${ok} presença(s) removida(s). ${falhas} não puderam ser removidas.`, "Remoção parcial", "!");
+  else toast(`${ok} presença(s) removida(s).`, "Tudo certo", "✓");
+}
+function limparWaitingSelecionados(){
+  const ids = [...selWaiting].map(Number).filter(Boolean);
+  if(!ids.length) return toast("Selecione ao menos um motorista.", "Atenção", "!");
+  confirmarModal("Remover selecionados", `Remover ${ids.length} motorista(s) da lista do galpão?`, () => excluirWaitingEmLote(ids), "!", "Remover " + ids.length);
+}
+function limparWaitingHoje(){
+  const ids = waiting.map(w => Number(w.id)).filter(Boolean);
+  if(!ids.length) return toast("A lista de hoje já está vazia.", "Atenção", "!");
+  confirmarModal("Limpar lista de hoje", `Todos os ${ids.length} motoristas aguardando serão removidos da lista do galpão.`, () => excluirWaitingEmLote(ids), "!", "Limpar lista");
+}
+
+/* ---------- Planilhas ---------- */
+function mostrarArquivo(input, nomeId, zonaId){
+  const f = input.files && input.files[0];
+  $(nomeId).innerText = f ? f.name : "Clique para escolher a planilha";
+  $(zonaId).classList.toggle("has-file", !!f);
+}
+
+function baixarArquivoModelo(nomeArquivo, dados, nomeAba){
+  try{
+    if(typeof XLSX === "undefined"){ toast("A biblioteca de Excel ainda não carregou. Recarregue a página e tente novamente.", "Atenção", "!"); return; }
+    const ws = XLSX.utils.aoa_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, nomeAba || "Modelo");
+    XLSX.writeFile(wb, nomeArquivo);
+  }catch(e){ toast(e.message || "Não foi possível baixar o modelo.", "Erro", "!"); }
+}
+function baixarModeloMotoristas(){
+  baixarArquivoModelo("modelo_motoristas.xlsx", [
+    ["driver_id","driver_name","vehicle_type","shift","telephone"],
+    ["123456","MOTORISTA EXEMPLO","FIORINO","AM","11999998888"],
+    ["789012","MOTORISTA EXEMPLO 2","PASSEIO","SD","11988887777"],
+    ["555888","MOTORISTA EXEMPLO 3","MOTO","PM2","11977776666"]
+  ], "Motoristas");
+}
+function baixarModeloRotas(){
+  baixarArquivoModelo("modelo_rotas.xlsx", [
+    ["route_name","region","allowed_vehicles"],
+    ["B-14+B-15/120","Guarulhos","FIORINO,PASSEIO"],
+    ["A-10+A-11/95","São Paulo","MOTO"],
+    ["C-01+C-02/80","Jardim Adriana","FIORINO,PASSEIO,VAN"]
+  ], "Rotas");
+}
+
+async function lerArquivo(file){
+  if(!file) throw new Error("Nenhum arquivo selecionado.");
+  if(typeof XLSX === "undefined") throw new Error("Biblioteca de Excel não carregada. Recarregue a página.");
+  const nome = file.name.toLowerCase();
+  if(nome.endsWith(".xlsx") || nome.endsWith(".xls")){
+    const wb = XLSX.read(await file.arrayBuffer(), {type:"array"});
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:"", raw:false});
+  }
+  if(nome.endsWith(".csv")){
+    const wb = XLSX.read(await file.text(), {type:"string"});
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:"", raw:false});
+  }
+  throw new Error("Formato inválido. Use CSV, XLS ou XLSX.");
+}
+
+function atualizarProgressoImportacao(tipo, atual, total, status){
+  const p = tipo === "motoristas" ? "progressMotoristas" : "progressRotas";
+  const box = $(p), fill = $(p + "Fill"), percentEl = $(p + "Percent"), statusEl = $(p + "Status");
+  if(!box || !fill || !percentEl || !statusEl) return;
+  const pct = Math.min(100, Math.round((atual / (total > 0 ? total : 1)) * 100));
+  box.style.display = "block";
+  fill.style.width = pct + "%";
+  percentEl.innerText = pct + "%";
+  statusEl.innerText = status || `Processando ${atual} de ${total}`;
+}
+function resetarProgressoImportacao(tipo){ atualizarProgressoImportacao(tipo, 0, 1, "Preparando arquivo…"); }
+
+async function importarMotoristasArquivo(){
+  const input = $("arquivoMotoristas");
+  const file = input && input.files ? input.files[0] : null;
+  if(!file) return toast("Selecione um arquivo para importar.", "Atenção", "!");
+
+  resetarProgressoImportacao("motoristas");
+  let rows = [];
+  try{ rows = await lerArquivo(file); }
+  catch(e){ atualizarProgressoImportacao("motoristas", 0, 1, "Erro ao ler arquivo."); return toast(e.message || "Não foi possível ler o arquivo.", "Erro", "!"); }
+  if(!rows.length){ atualizarProgressoImportacao("motoristas", 0, 1, "Arquivo vazio."); return toast("O arquivo está vazio ou sem dados válidos.", "Atenção", "!"); }
+
+  let ok = 0; const erros = [];
+  atualizarProgressoImportacao("motoristas", 0, rows.length, "Iniciando importação…");
+
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    atualizarProgressoImportacao("motoristas", i, rows.length, `Processando motorista ${i + 1} de ${rows.length}…`);
+    const body = {
+      p_password: adminPass,
+      p_driver_id: normalizarTexto(r.driver_id || r.ID || r.id || r["ID"]),
+      p_driver_name: normalizarTexto(r.driver_name || r.NOME || r.nome || r.name || r["DRIVER NAME"]),
+      p_vehicle_type: normalizarVeiculo(r.vehicle_type || r.VEICULO || r.veiculo || r["vehicle type"] || r["VEÍCULO"]),
+      p_shift: normalizarTurno(r.shift || r.TURNO || r.turno || r["Turno"]),
+      p_telephone: normalizarTexto(r.telephone || r.TELEFONE || r.telefone || r.phone || r["Telefone"])
+    };
+    if(!body.p_shift) body.p_shift = "AM";
+
+    if(!body.p_driver_id || !body.p_driver_name || !validarVeiculo(body.p_vehicle_type) || !validarTurno(body.p_shift)){
+      erros.push(`Linha ${i + 2}: inválida. Confira driver_id, driver_name, vehicle_type e shift.`);
+      atualizarProgressoImportacao("motoristas", i + 1, rows.length, `Linha ${i + 2} ignorada.`);
+      await pausa(10);
+      continue;
+    }
+    try{ await rpc("admin_create_driver", body); ok++; }
+    catch(e){ erros.push(`Linha ${i + 2}: ${e.message}`); }
+    atualizarProgressoImportacao("motoristas", i + 1, rows.length, `Processados ${i + 1} de ${rows.length}.`);
+    await pausa(10);
+  }
+
+  atualizarProgressoImportacao("motoristas", rows.length, rows.length, "Importação concluída.");
+  const resultado = $("resultadoMotoristasMassa");
+  resultado.style.display = "block";
+  resultado.innerText = "Importados/atualizados: " + ok + (erros.length ? "\n\nOcorrências:\n" + erros.join("\n") : "");
+
+  if(ok > 0) toast(`${ok} motorista(s) importado(s) ou atualizado(s).`, "Importação concluída", "✓");
+  else toast("Nenhum motorista foi importado. Confira se a planilha está no modelo correto.", "Atenção", "!");
+}
+
+async function importarRotasArquivo(){
+  const input = $("arquivoRotas");
+  const file = input && input.files ? input.files[0] : null;
+  if(!file) return toast("Selecione um arquivo para importar.", "Atenção", "!");
+
+  const shiftsGlobais = turnosSelecionadosRota();
+  if(!shiftsGlobais.length) return toast("Libere pelo menos um turno no filtro geral antes de importar as rotas.", "Atenção", "!");
+
+  resetarProgressoImportacao("rotas");
+  let rows = [];
+  try{ rows = await lerArquivo(file); }
+  catch(e){ atualizarProgressoImportacao("rotas", 0, 1, "Erro ao ler arquivo."); return toast(e.message || "Não foi possível ler o arquivo.", "Erro", "!"); }
+  if(!rows.length){ atualizarProgressoImportacao("rotas", 0, 1, "Arquivo vazio."); return toast("O arquivo está vazio ou sem dados válidos.", "Atenção", "!"); }
+
+  let ok = 0; const erros = [];
+  atualizarProgressoImportacao("rotas", 0, rows.length, "Iniciando importação…");
+
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    atualizarProgressoImportacao("rotas", i, rows.length, `Processando rota ${i + 1} de ${rows.length}…`);
+    const route = normalizarTexto(r.route_name || r.ROTA || r.rota || r["Rota"]);
+    const reg = normalizarTexto(r.region || r.REGIAO || r.regiao || r["REGIÃO"] || r["Região"]);
+    const veic = String(r.allowed_vehicles || r.VEICULOS || r.veiculos || r["VEÍCULOS"] || r["Veículos"] || "")
+      .split(",").map(v => v.trim().toUpperCase()).filter(Boolean);
+
+    if(!route || !reg || !veic.length || veic.some(v => !validarVeiculo(v))){
+      erros.push(`Linha ${i + 2}: inválida. Confira route_name, region e allowed_vehicles.`);
+      atualizarProgressoImportacao("rotas", i + 1, rows.length, `Linha ${i + 2} ignorada.`);
+      await pausa(10);
+      continue;
+    }
+    try{
+      await rpc("admin_create_route", {p_password: adminPass, p_route_name: route, p_region: reg, p_allowed_vehicles: [...new Set(veic)], p_allowed_shifts: shiftsGlobais});
+      ok++;
+    }catch(e){ erros.push(`Linha ${i + 2}: ${e.message}`); }
+    atualizarProgressoImportacao("rotas", i + 1, rows.length, `Processadas ${i + 1} de ${rows.length}.`);
+    await pausa(10);
+  }
+
+  atualizarProgressoImportacao("rotas", rows.length, rows.length, "Importação concluída.");
+  const resultado = $("resultadoRotasMassa");
+  resultado.style.display = "block";
+  resultado.innerText = "Rotas importadas: " + ok + (erros.length ? "\n\nOcorrências:\n" + erros.join("\n") : "");
+  carregarRotas();
+
+  if(ok > 0) toast(`${ok} rota(s) publicada(s).`, "Importação concluída", "✓");
+  else toast("Nenhuma rota foi importada. Confira se a planilha está no modelo correto.", "Atenção", "!");
+}
+
+window.baixarModeloMotoristas = baixarModeloMotoristas;
+window.baixarModeloRotas = baixarModeloRotas;
+window.importarMotoristasArquivo = importarMotoristasArquivo;
+window.importarRotasArquivo = importarRotasArquivo;
+
+function normalizarTexto(v){ return String(v || "").trim(); }
+function normalizarVeiculo(v){ return String(v || "").trim().toUpperCase(); }
+function normalizarTurno(v){ return String(v || "").trim().toUpperCase(); }
+function validarVeiculo(v){ return ["FIORINO","PASSEIO","MOTO","VAN"].includes(String(v || "").toUpperCase()); }
+function validarTurno(v){ return ["AM","SD","PM2"].includes(String(v || "").toUpperCase()); }
+
+/* ---------- Inicialização ---------- */
+aplicarTema(document.documentElement.dataset.theme || "dark");
+if(adminPass){ busy($("btnLogin"), () => login(true)); }
+</script>
+</body>
+</html>
